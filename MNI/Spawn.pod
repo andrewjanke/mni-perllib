@@ -933,6 +933,8 @@ Complete details of C<Spawn>'s operation are given in
 L<"COMMAND COMPLETION">, L<"INTERFACE TO BATCH">,
 L<"REDIRECTION AND CAPTURING">, and L<"ERROR HANDLING"> above.
 
+=back
+
 =head1 OBJECT-ORIENTED INTERFACE
 
 The methods provided by the object-oriented interface are:
@@ -971,6 +973,8 @@ Same as C<ClearDefaultArgs>, except called as a method.
 =item spawn (COMMAND [, OPTION, VALUE, ...])
 
 Same as C<Spawn>, except called as a method.
+
+=back
 
 =head1 AUTHOR
 
