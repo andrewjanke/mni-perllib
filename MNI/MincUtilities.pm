@@ -12,7 +12,7 @@
 #@REQUIRES   : Exporter
 #@CREATED    : 1997/08/07, Greg Ward (from minc_utilities.pl, revision 1.16)
 #@MODIFIED   : 
-#@VERSION    : $Id: MincUtilities.pm,v 1.1 1997-08-08 20:04:24 greg Exp $
+#@VERSION    : $Id: MincUtilities.pm,v 1.2 1997-08-13 14:13:36 greg Exp $
 #@COPYRIGHT  : Copyright (c) 1997 by Gregory P. Ward, McConnell Brain Imaging
 #              Centre, Montreal Neurological Institute, McGill University.
 #
@@ -539,6 +539,12 @@ sub update_history
    }
    elsif (! $history)
    {
+      unless (defined $MNI::Startup::StartDir)
+      {
+         carp "update_history: warning: \$MNI::Startup::StartDir not defined ".
+              "(did you remember to use MNI::Startup?)";
+         $MNI::Startup::StartDir = '???';
+      }
       $history = sprintf ("[%s] [%s] %s %s", 
                           userstamp (undef, undef, $MNI::Startup::StartDir), 
                           timestamp ($^T), 
