@@ -18,7 +18,7 @@
 #              AutoLoader
 #@CREATED    : 1997/05/13, Greg Ward (from path_utilities.pl, revision 1.10)
 #@MODIFIED   : 
-#@VERSION    : $Id: PathUtilities.pm,v 1.5 1997-08-13 14:05:20 greg Exp $
+#@VERSION    : $Id: PathUtilities.pm,v 1.6 1997-08-26 19:43:34 greg Exp $
 #@COPYRIGHT  : Copyright (c) 1997 by Gregory P. Ward, McConnell Brain Imaging
 #              Centre, Montreal Neurological Institute, McGill University.
 #
@@ -61,17 +61,15 @@ MNI::PathUtilities - recognize, parse, and tweak POSIX file and path names
    normalize_dirs ($dir1, $dir2, ...);
 
    ($dir, $base, $ext) = split_path ($path);
-
-   ($dir, $base, $last_ext) = split_path ($path, 'last');
-
+   ($dir, $base, $ext) = split_path ($path, 'first');  # the default
+   ($dir, $base, $ext) = split_path ($path, 'last');
+   ($dir, $base, $ext) = split_path ($path, 'last', \@skip_ext);
    ($dir, $base) = split_path ($path, 'none');
 
    @files = replace_dir ($newdir, @files);
-
    $file = replace_dir ($newdir, $file);
 
    @files = replace_ext ($newext, @files);
-
    $file = replace_ext ($newext, $file);
 
    @dirs = merge_paths (@dirs);
@@ -168,32 +166,59 @@ sub normalize_dirs
 }
 
 
-=item split_path (PATH [, EXT_OPT])
+=item split_path (PATH [, EXT_OPT, [SKIP_EXT]])
 
 Splits a Unix/POSIX path into directory, base filename, and extension.
-(The extension is chosen based on either the first or last dot in the
-filename, depending on C<EXT_OPT>; by default, it splits on the first dot
-in the filename.)
+(The extension always starts with some dot after the last slash; which dot
+is chosen depends on EXT_OPT and SKIP_EXT.  By default, it splits on the
+first dot in the filename.)
 
 C<split_path> is normally called like this:
 
    ($dir,$base,$ext) = split_path ($path);
 
-If there is no directory (i.e. C<$path> refers to a file in the current
-directory), then C<$dir> will be the empty string.  Otherwise, C<$dir> will
-be the head of C<$path> up to and including the last slash.  Usually, you
-can count on C<split_path> to do the Right Thing; you should only have to
-read the next couple of paragraphs if you're curious about the exact rules
-it uses.
+If there is no directory (i.e. C<$path> refers implicitly to a file in the
+current directory), then C<$dir> will be the empty string.  Otherwise,
+C<$dir> will be the head of C<$path> up to and including the last slash.
+Usually, you can count on C<split_path> to do the right thing; you should
+only have to read the next couple of paragraphs if you're curious about the
+exact rules it uses, or if you need to customize how it picks the
+extension.
 
 If EXT_OPT is supplied, it must be one of C<'first'>, C<'last'>, or
-C<'none'>.  By default, it is C<'first'>, meaning that C<$ext> will be the
-tail end of C<$path>, starting at the first period after the last slash.
-If EXT_OPT is C<'last'>, then C<$ext> will start at the I<last> period
-after the last slash.  If EXT_OPT is C<'none'>, then C<$ext> will be
-undefined and any extensions in C<$path> will be rolled into C<$base>.
-Finally, if there are no extensions at all in C<$path>, then C<$ext> will
-be undefined whatever the value of EXT_OPT.
+C<'none'>.  It defaults to C<'first'>, meaning that C<$ext> will start at
+the first period after the last slash in PATH, and go the end of the
+string.  If EXT_OPT is C<'last'>, then C<$ext> will start at the I<last>
+period after the last slash, unless SKIP_EXT is supplied (see below).  If
+EXT_OPT is C<'none'>, then C<$ext> will be undefined and any extensions in
+C<$path> will be rolled into C<$base>.  Finally, if there are no extensions
+at all in PATH, then C<$ext> will be undefined whatever the value of
+EXT_OPT.
+
+SKIP_EXT, if supplied, must be a reference to a list of extensions to
+ignore when deciding which extension is the last one.  Thus, it only
+affects things if EXT_OPT is C<'last'>.  For example, splitting
+C<'foo_bar.mnc.gz'> with the "last extension" option would return
+C<'foo_bar.mnc'> as the basename, and C<'.gz'> as the extension.  Most
+likely, you want C<split_path> to skip over C<'.gz'> while finding the
+extension, and treat the dot before C<'mnc.gz'> as the "last" dot.  This
+can be done by including C<'gz'> in the SKIP_EXT list:
+
+   ($dir,$base,$ext) = split_path ($path, 'last', [qw(gz z Z)]);
+
+This works by repeatedly attempting to strip off a trailing
+C</\.(gz|z|Z)/> from PATH before searching for the "last dot" to find
+the extension.  Any extensions stripped in this manner are appended by
+the extension following the new "last dot".  Thus, this method can be
+used to parse C<'foo.bar.pgp.gz'> or C<'foo.bar.gz.pgp'>, assuming that
+both C<'pgp'> and C<'gz'> are in the SKIP_EXT list.
+
+(Note that even though the return value C<$ext> includes a leading dot,
+you should not put leading dots on the extensions in SKIP_EXT.  The idea
+is to maximize your convenience on both ends: it is easiest to type a
+list of extensions without dots, and including a dot on the output side
+means you can reconstruct the original path by just concatenating the
+three return values.)
 
 C<$base> is just whatever portion of C<$path> is left after pulling off
 C<$dir> and C<$ext> -- i.e., from the last slash to the first period (if
@@ -221,8 +246,22 @@ then the last example would be split differently, like this:
 
    '/foo/bar/zap.mnc.gz'        ('/foo/bar/', 'zap.mnc', '.gz')
 
-And with EXT_OPT equal to C<'none'>, all of the filenames with extensions
-would be split like this:
+But if you add a SPLIT_EXT list to that example:
+
+   split_path ($path, 'last', [qw(gz z Z)])
+
+then we return to the original split:
+
+   '/foo/bar/zap.mnc.gz'        ('/foo/bar/', 'zap, '.mnc'.gz')
+
+If the filename, however, had been something like C<'ding.dong.mnc.gz'>,
+where you want to treat C<'ding.dong'> as the basename, then you would
+have to use an EXT_OPT of C<'last'> with a SPLIT_EXT list.  (Despite
+this convention being at odds with most of the Unix world, it appears to
+have some currency.)
+
+Finally, with an EXT_OPT of C<'none'>, filenames with extensions would
+be split like this:
 
    'foo.c'                      ('', 'foo.c', undef)
    '/foo/bar/zap.mnc'           ('/foo/bar/', 'zap.mnc', undef)
@@ -273,7 +312,7 @@ quite so flexible and generic a way as C<split_path>.
 #-----------------------------------------------------------------------------
 sub split_path
 {
-   my ($path, $ext_opt) = @_;
+   my ($path, $ext_opt, $skip_ext) = @_;
    my ($dir, $base, $ext);
    
    $ext_opt = "first" unless defined $ext_opt;
@@ -293,9 +332,21 @@ sub split_path
    }
    elsif ($ext_opt eq "last")
    {
+      my $trailer = '';
+      if ($skip_ext)
+      {
+         my $skip_re = '\.(' . join ('|', @$skip_ext) . ')';
+         $trailer = $1 . $trailer while $path =~ s/($skip_re)$//;
+      }
+
       ($dir, $base, $ext) = $path =~ m+^(.*/)?([^/]*)(\.[^/.]*)$+
-         or ($dir, $base) = $path =~ m+^(.*/)?([^/]*)$+
-         }
+         or ($dir, $base) = $path =~ m+^(.*/)?([^/]*)$+;
+
+      if ($trailer)
+      {
+         $ext ? ($ext .= $trailer) : ($ext = $trailer);
+      }
+   }
    else
    {
       die "split_path: unknown extension option \"$ext_opt\"\n";
