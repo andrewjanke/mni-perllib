@@ -6,7 +6,7 @@
 #
 # Greg Ward, summer 1997
 #
-# $Id: Makefile.PL,v 1.5 1997-10-01 20:58:04 greg Rel $
+# $Id: Makefile.PL,v 1.6 1999-05-12 22:29:58 stever Exp $
 #
 
 use strict;
@@ -220,7 +220,7 @@ WriteMakefile
    (
     NAME          => 'mni_perllib',
     VERSION_FROM  => 'MNI.pm',
-    PMLIBDIRS     => ['Getopt', 'MNI'],
+    PMLIBDIRS     => ['MNI'],
     dist          => { COMPRESS=>"gzip", SUFFIX=>"gz" },
     clean         => { FILES => 'MNI/DataDir.pm t/datadir.t t/toy_ls' },
    );

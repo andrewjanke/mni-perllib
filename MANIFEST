@@ -17,7 +17,6 @@ t/mincutil.t
 t/startup.t
 t/compare.pl
 t/testvol.mnc
-t/getopt.t
 t/datadir.t.in
 t/toy_ls.in
 MNI/FileUtilities.pm
@@ -29,8 +28,6 @@ MNI/Startup.pm
 MNI/Spawn.pm
 MNI/Spawn.pod
 MNI/DataDir.pm.in
-Getopt/Tabular.pm
-Getopt/Tabular.pod
 doc/Makefile
 doc/extract_pod
 doc/make_latex

@@ -1,3 +1,13 @@
+Wed May 12 18:23:10 1999  Steve ROBBINS  <stever@bic.mni.mcgill.ca>
+
+	* .cvsignore:
+	* MNI/.cvsignore:
+	* t/.cvsignore: new files.
+
+	* MANIFEST: removed getopt-related files.
+
+	* Makefile.PL (PMLIBDIRS): removed Getopt.
+
 Wed May 12 16:56:06 1999  Steve ROBBINS  <stever@bic.mni.mcgill.ca>
 
 	* MNI/Batch.pm: new file.
