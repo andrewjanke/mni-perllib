@@ -17,7 +17,7 @@
 #@REQUIRES   : Exporter
 #@CREATED    : 1997/04/25, Greg Ward (from file_utilities.pl, revision 1.16)
 #@MODIFIED   : 
-#@VERSION    : $Id: FileUtilities.pm,v 1.8 1997-08-27 20:04:58 greg Rel $
+#@VERSION    : $Id: FileUtilities.pm,v 1.9 1997-09-30 18:45:47 greg Exp $
 #@COPYRIGHT  : Copyright (c) 1997 by Gregory P. Ward, McConnell Brain Imaging
 #              Centre, Montreal Neurological Institute, McGill University.
 #
@@ -38,7 +38,7 @@ require AutoLoader;
 use Carp;
 use POSIX qw(strftime);
 
-# use MNI::PathUtilities qw(replace_dir);
+use MNI::PathUtilities qw(normalize_dirs);
 
 @ISA = qw(Exporter);
 @EXPORT = ();
@@ -858,12 +858,12 @@ sub search_directories
    croak ("dirs argument must be an array ref") unless ref $dirs eq 'ARRAY';
    $test = '-e' unless defined $test;
 
+   my @dirs = @$dirs;                   # so we don't clobber caller's data
+   normalize_dirs (@dirs);
    $found = 0;
    local $_;
-   foreach $dir (@$dirs)
+   foreach $dir (@dirs)
    {
-      $dir = './' if $dir eq '';
-      $dir .= '/' unless substr ($dir, -1) eq '/';
       $_ = $dir . $file;
       $found = eval $test;
       croak ("bad test: $test ($@)") if $@;
