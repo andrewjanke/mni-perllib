@@ -14,7 +14,7 @@
 #@REQUIRES   : Exporter
 #@CREATED    : 1997/07/07, Greg Ward (loosely based on JobControl.pm, rev 2.8)
 #@MODIFIED   : 
-#@VERSION    : $Id: Spawn.pm,v 1.8 1997-08-18 22:34:07 greg Exp $
+#@VERSION    : $Id: Spawn.pm,v 1.9 1997-08-21 22:27:12 greg Rel $
 #@COPYRIGHT  : Copyright (c) 1997 by Gregory P. Ward, McConnell Brain Imaging
 #              Centre, Montreal Neurological Institute, McGill University.
 #
@@ -26,7 +26,7 @@
 package MNI::Spawn;
 
 use strict;
-use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS);
+use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $ProgramName);
 use Carp;
 use Cwd;
 use MNI::FileUtilities qw(:search);
@@ -69,6 +69,16 @@ my %DefaultOptions =
     notify       => $ENV{'USER'},       # should &Obituary actually send mail?
     stdout       => undef,              # what to do with stdout
     stderr       => undef);             # what to do with stderr
+
+
+if (defined $main::ProgramName)
+{
+   *ProgramName = \$main::ProgramName;
+}
+else
+{
+   ($ProgramName = $0) =~ s|.*/||;
+}   
 
 
 # ----------------------------------------------------------------------
@@ -190,7 +200,7 @@ sub register_programs
    }
    else
    {
-      map { warn "$::ProgramName: \l$_" } @warnings;
+      map { warn "$ProgramName: \l$_" } @warnings;
       return 0;
    }
 }
@@ -680,7 +690,7 @@ sub complete_command
       {
          my $lh = $self->{loghandle};
          printf $lh ("[%s] [%s] [%s] %s\n",
-                     $::ProgramName, userstamp(), timestamp(),
+                     $ProgramName, userstamp(), timestamp(),
                      shellquote (@command));
       }
 
@@ -734,7 +744,7 @@ sub complete_command
       {
          my $lh = $self->{loghandle};
          printf $lh ("[%s] [%s] [%s] %s\n",
-                     $::ProgramName, userstamp(), timestamp(), $command);
+                     $ProgramName, userstamp(), timestamp(), $command);
       }
 
       return ($command, $program);
@@ -976,7 +986,7 @@ sub obituary
       $text = '';
       $cwd = getcwd();
 
-      $text .= "$::ProgramName crashed" . 
+      $text .= "$ProgramName crashed" . 
          ($program ? " while running $program" : "") . "\n";
       $text .= "from directory: $cwd\n";
 
@@ -1001,8 +1011,8 @@ sub obituary
       open (MAIL, "|/usr/lib/sendmail $self->{notify}");
 
       print MAIL <<EOM;
-From: $::ProgramName ($::ProgramName)
-Subject: $::ProgramName crashed while running $program
+From: $ProgramName ($ProgramName)
+Subject: $ProgramName crashed while running $program
 
 Dear $self->{notify},
 
@@ -1013,9 +1023,9 @@ EOM
    }
 
    $program
-      ? die "$::ProgramName: crashed while running $program " .
+      ? die "$ProgramName: crashed while running $program " .
             "(termination status=$status)\n"
-      : die "$::ProgramName: crashed while running another program " .
+      : die "$ProgramName: crashed while running another program " .
             "(termination status=$status)\n";
 
 }  # obituary   
@@ -1089,7 +1099,7 @@ sub check_status
 
       if ($ea eq 'fatal')
       {
-         die "$::ProgramName: crashed while running $program " .
+         die "$ProgramName: crashed while running $program " .
              "(termination status=$status)\n";
       }
       elsif ($ea eq 'notify')
@@ -1103,7 +1113,7 @@ sub check_status
       }
       elsif ($ea eq 'warn')
       {
-         warn "$::ProgramName: warning: " .
+         warn "$ProgramName: warning: " .
               "$program crashed (termination status=$status)\n";
          return 0;
       }
