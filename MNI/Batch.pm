@@ -11,7 +11,8 @@
 #@CALLS      : 
 #@CREATED    : 95/11/13, Greg Ward
 #@MODIFIED   : 98/11/06, Chris Cocosco: -ported from Batch.pm ... (STILL BETA!)
-#@VERSION    : 
+#@MODIFIED   : (...see CVS for more history info)
+#@VERSION    : $Id: Batch.pm,v 1.10 1999-11-30 17:11:10 crisco Exp $
 #-----------------------------------------------------------------------------
 require 5.002;
 
@@ -42,7 +43,7 @@ MNI::Batch - execute commands via the UCSF Batch Queuing System
 
   MNI::Batch::SetOptions( queue => 'long', synchronize => 'finish' );
 
-  StartJob( 'Make List', stdout => 'logfile', merge_stderr => 1 );
+  StartJob( job_name=> 'Make List', stdout => 'logfile', merge_stderr => 1 );
   QueueCommand( 'ls -lR' );
   QueueCommand( 'gzip *.ps' );
   FinishJob();
@@ -341,7 +342,8 @@ sub _batch_optstring
 # MUSING: what is the rationale to inheriting $verbose and $execute from
 # the caller (potentially another perl module) rather than $main,
 # as we do for $ProgramName??
-
+#
+# Possible Answer (by CC): to be consistent with MNI::Spawn's behaviour...
 
 # ------------------------------ MNI Header ----------------------------------
 #@NAME       : find_calling_package
@@ -372,19 +374,31 @@ sub find_calling_package
 #@DESCRIPTION: 
 #@CREATED    : 1997/07/07, GPW
 #@MODIFIED   : [CC:98/11/06] inspired by the version from MNI::Spawn
+#@MODIFIED   : [CC:99/10/29] added another argument
 #-----------------------------------------------------------------------------
 sub set_undefined_option
 {
    no strict 'refs';
    my ( $option, $varname) = @_;
 
+   # Note: in typical usage, Batch can be called from either 'main'
+   # either 'MNI::Spawn' (which doesn't export '$Verbose' like main
+   # does) ...
+
    return if defined $Options{$option};
 
    my $package = find_calling_package;
-   carp "spawn: fallback variable $package\::$varname undefined " .
-        "for option $option"
-      unless defined ${ $package . '::' . $varname };
-   $Options{$option} = ${ $package . '::' . $varname }
+   if( defined ${ $package . '::' . $varname } ) {
+      $Options{$option} = ${ $package . '::' . $varname };
+   }
+   elsif( defined ${ 'main::' . $varname } ) {
+      $Options{$option} = ${ 'main::' . $varname };
+   }
+   else {
+       carp "batch: neither of fallback variables " . 
+	   "$package\::$varname or main\::$varname are defined " .
+	   "for option $option";
+   }
 }
 
 
@@ -471,12 +485,16 @@ sub StartJob
     croak "StartBatchJob: job already in progress; cannot open two jobs"
       if ($JobPID);
 
-    &set_undefined_option( 'verbose', 'Verbose');
-    &set_undefined_option( 'execute', 'Execute');
-
     # Update options for this job
     %Options = %DefaultOptions;
     _set_options( @_ );
+
+    # N.B. this needs to be done *after* the two lines above, because
+    # otherwise any options set by default to undef will be reset to
+    # undef after being set by &set_undefined_option! (grrr) [CC:99/10/29]
+    #
+    &set_undefined_option( 'verbose', 'Verbose');
+    &set_undefined_option( 'execute', 'Execute');
 
     my $cmd = 'batch ' . _batch_optstring();
 
@@ -601,8 +619,13 @@ END
    return $finish_syncfile;
 }
 
+# [ CC nov 2 1999 ]
+# TODO/FIXME: I'm not sure what's the "right way" to format this
+# double "title" for the Synchronize section...
 
 =item Synchronize( onwhat, delay )
+
+= cut
 
 =item Synchronize( onwhat, initial_delay, periodic_delay [,timeout] )
 

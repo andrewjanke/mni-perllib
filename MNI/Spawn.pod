@@ -553,8 +553,11 @@ Boolean; if true, commands will be added to the currently-open batch job
 
 =item C<clobber> (default: false)
 
-Boolean; if true, C<Spawn> will overwrite files that are the destination
-of output redirection.
+Boolean; if true, C<Spawn> will overwrite files that are the
+destination of output redirection.  NOTE: this option is ignored when
+running through batch; the output redirection files will be appended
+to if no Batch job is currently opened, or clobbered (overwriten) if
+you already have opened a job (by means of Batch::StartJob() ).
 
 =item C<loghandle> (default: C<\*STDOUT>)
 

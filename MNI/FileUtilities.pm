@@ -17,7 +17,7 @@
 #@REQUIRES   : Exporter
 #@CREATED    : 1997/04/25, Greg Ward (from file_utilities.pl, revision 1.16)
 #@MODIFIED   : 
-#@VERSION    : $Id: FileUtilities.pm,v 1.12 1997-10-03 13:31:57 greg Rel $
+#@VERSION    : $Id: FileUtilities.pm,v 1.13 1999-11-30 17:11:11 crisco Exp $
 #@COPYRIGHT  : Copyright (c) 1997 by Gregory P. Ward, McConnell Brain Imaging
 #              Centre, Montreal Neurological Institute, McGill University.
 #
@@ -542,12 +542,12 @@ In a scalar context, returns true if all files in FILES are ok, false if
 there were any errors.  Thus, the following is a common idiom:
 
    ($infile1, $infile2) = @ARGV;
-   check_input_files ($infile1, $infile2) || exit 1;
+   check_files ($infile1, $infile2) || exit 1;
 
-It's OK to fail silently since C<check_input_files> prints ample
+It's OK to fail silently since C<check_files> prints ample
 warnings in case of any error.  Note that you should check that C<@ARGV>
 has the number of elements you expect before doing this, as
-C<check_input_files> silently skips any members of FILES that are
+C<check_files> silently skips any members of FILES that are
 undefined.  (Yes, this is a feature.)
 
 In an array context, returns the list of found files.  This list will
@@ -556,7 +556,7 @@ that weren't found will be replaced with C<undef>.  This is most useful
 when used in conjunction with the variant-extensions feature, e.g. you
 could do something like this
 
-   ($infile1, $infile2) = check_input_files (\@ARGV, 1);
+   ($infile1, $infile2) = check_files (\@ARGV, 1);
    exit 1 unless $infile1 && $infile2;
 
 to pull filenames from the command line, make sure each one exists

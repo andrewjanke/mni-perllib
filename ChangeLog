@@ -1,3 +1,21 @@
+1999-11-30  Chris COCOSCO  <crisco@thaisa.bic.mni.mcgill.ca>
+
+	* MNI/FileUtilities.pm (check_files): documentation fixes.
+
+	* MNI/Batch.pm: documentation fixes.
+	(set_undefined_option): made it more robust (now it
+	can properly handle the case when the calling package is
+	MNI::Spawn and not main:: )
+	(StartJob): fixed a bug related to set_undefined_option
+
+	* MNI/Spawn.pod: added a clarification about redirection clobber
+	when using batch.
+
+1999-11-17  Chris COCOSCO  <crisco@thaisa.bic.mni.mcgill.ca>
+
+	* MNI/Spawn.pm: added a carp warning about the redirection
+	clobber/append when running through batch.
+
 Wed Oct 27 18:38:15 1999  Steve ROBBINS  <stever@bic.mni.mcgill.ca>
 
 	* MNI/Batch.pm (create_sync_file): use underscore rather than
