@@ -18,7 +18,7 @@
 #              AutoLoader
 #@CREATED    : 1997/05/13, Greg Ward (from path_utilities.pl, revision 1.10)
 #@MODIFIED   : 
-#@VERSION    : $Id: PathUtilities.pm,v 1.6 1997-08-26 19:43:34 greg Exp $
+#@VERSION    : $Id: PathUtilities.pm,v 1.7 1997-08-27 13:40:56 greg Exp $
 #@COPYRIGHT  : Copyright (c) 1997 by Gregory P. Ward, McConnell Brain Imaging
 #              Centre, Montreal Neurological Institute, McGill University.
 #
@@ -206,12 +206,12 @@ can be done by including C<'gz'> in the SKIP_EXT list:
 
    ($dir,$base,$ext) = split_path ($path, 'last', [qw(gz z Z)]);
 
-This works by repeatedly attempting to strip off a trailing
-C</\.(gz|z|Z)/> from PATH before searching for the "last dot" to find
-the extension.  Any extensions stripped in this manner are appended by
-the extension following the new "last dot".  Thus, this method can be
-used to parse C<'foo.bar.pgp.gz'> or C<'foo.bar.gz.pgp'>, assuming that
-both C<'pgp'> and C<'gz'> are in the SKIP_EXT list.
+This works by repeatedly attempting to strip off a trailing C</\.(gz|z|Z)/>
+from PATH before searching for the "last dot" to find the extension.  After
+the remaining extension is extracted, the "skipped" extensions are appended
+to it in order to preserve the entire original pathname.  This method can
+be used to parse C<'foo.bar.pgp.gz'> or C<'foo.bar.gz.pgp'>, assuming that
+both C<'pgp'> and C<'gz'> are in the SKIP_EXT list (in any order).
 
 (Note that even though the return value C<$ext> includes a leading dot,
 you should not put leading dots on the extensions in SKIP_EXT.  The idea
@@ -220,10 +220,10 @@ list of extensions without dots, and including a dot on the output side
 means you can reconstruct the original path by just concatenating the
 three return values.)
 
-C<$base> is just whatever portion of C<$path> is left after pulling off
+Finally, C<$base> is just the portion of C<$path> left after pulling off
 C<$dir> and C<$ext> -- i.e., from the last slash to the first period (if
-C<EXT_OPT> is C<'first'>), or from the last slash to the last period (if
-C<EXT_OPT> is C<'last'>).
+C<EXT_OPT> is C<'first'>), or from the last slash to the last period
+excluding skipped extensions (if C<EXT_OPT> is C<'last'>).
 
 For example, 
 
