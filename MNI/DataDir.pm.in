@@ -6,10 +6,10 @@
 #@EXPORT_TAGS: 
 #@USES       : 
 #@REQUIRES   : Common way for MNI packages to find a directory containing
-#              static (model) data.
+#              static data (eg. model files).
 #@CREATED    : 
 #@MODIFIED   : 
-#@VERSION    : $Id: DataDir.pm.in,v 1.2 1997-09-16 19:23:09 greg Exp $
+#@VERSION    : $Id: DataDir.pm.in,v 1.3 1997-09-17 22:18:46 greg Exp $
 #@COPYRIGHT  : Copyright (c) 1997 by Gregory P. Ward, McConnell Brain Imaging
 #              Centre, Montreal Neurological Institute, McGill University.
 #
@@ -25,6 +25,7 @@ use strict;
 use Carp;
 
 use MNI::FileUtilities qw(search_directories check_files);
+use MNI::PathUtilities qw(normalize_dirs);
 
 =head1 NAME
 
@@ -40,9 +41,9 @@ MNI::DataDir - find directory containing static model data for a package
 =head1 DESCRIPTION
 
 F<MNI::DataDir> gives a standard method for applications to find static
-(model) data, and a standard interface for users to customize this
-search.  This is to ensure that all our software acts in a consistent,
-predictable way.
+data (such as model files), and a standard interface for users to
+customize this search.  This is to ensure that all our software acts in
+a consistent, predictable way.
 
 From the programmer's perspective, using F<MNI::DataDir> is quite
 simple: make a single call to C<MNI::DataDir::dir> early in your
@@ -75,7 +76,7 @@ installed.  The hard-coded default for the version of F<MNI::DataDir>
 that you're currently reading about is F<@DEFAULT_DATA_DIR@>.
 
 Normally, C<MNI::DataDir::dir> looks under this default directory for a
-package-specific data directory---for instance, in the above example,it
+package-specific data directory---for instance, in the above example, it
 would look for F<@DEFAULT_DATA_DIR@/autoreg>.  If this directory isn't
 found, C<MNI::DataDir::dir> will C<die>, crashing your program with an
 appropriate error message for the end user.
@@ -96,9 +97,10 @@ I<not> fallback to the default directory.
 # BEGIN block before `use'ing MNI::DataDir.  But that would be very
 # rude.)
 
+my $default_dir = '@DEFAULT_DATA_DIR@';
 my @search_path = exists $ENV{'MNI_DATAPATH'}
    ? split (':', $ENV{'MNI_DATAPATH'})
-   : ('@DEFAULT_DATA_DIR@');
+   : ($default_dir);
 my $program_name = $MNI::Startup::ProgramName || $::ProgramName || $0;
 
 
@@ -118,7 +120,8 @@ trailing slash.  Dies if the directory was not found.
 
 sub dir
 {
-   my ($package_name) = @_;
+   my $package_name = shift
+      or croak "MNI::DataDir::dir: \$package_name must be given";
    my $dir;
 
    croak "MNI::DataDir::dir: \$package_name must be given" 
@@ -134,9 +137,43 @@ sub dir
 }
 
 
+=item install_dir (PACKAGE)
+
+Similar to C<dir>, but C<install_dir> never fails; if it doesn't find a
+directory for PACKAGE on its search path, it makes an educated guess at
+what the package directory ought to be.  In particular, it takes the
+first directory from the search path (which will just be the hard-coded
+default directory, unless the MNI_DATAPATH environment variable is
+defined) and appends PACKAGE to it.
+
+This is meant to be used only at package-configuration time, to provide
+the installer of the package with a reasonable default place to put the
+package's data.
+
+Note that C<install_dir> most expressly does I<not> create the directory
+it comes up with.  For one thing, the installer ought to be able to
+choose a different directory; this is just a reasonable initial guess.
+For another thing, installation directories should only be created at
+installation time, not at configuration time.
+
+=cut
+
+sub install_dir
+{
+   my $package_name = shift 
+      or croak "MNI::DataDir::install_dir: \$package_name must be given";
+   my $dir;
+
+   $dir = search_directories ($package_name, \@search_path, '-d')
+      || $search_path[0];
+   normalize_dirs ($dir);
+   $dir . $package_name;
+}
+
+
 =item check_data (DIR, FILES)
 
-Checks that each file names in FILES (a list ref) exists in DIR.  DIR
+Checks that each file named in FILES (a list ref) exists in DIR.  DIR
 is presumably of the form returned by C<MNI::DataDir::dir>, i.e. with a
 trailing slash.  Dies if any files do not exist or are not readable.
 
@@ -151,6 +188,7 @@ sub check_data
       || die "Some required data files not found in $dir\n";
 }
 
+=back
 
 =head1 AUTHOR
 
