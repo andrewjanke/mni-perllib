@@ -14,7 +14,7 @@
 #@REQUIRES   : Exporter
 #@CREATED    : 1997/07/07, Greg Ward (loosely based on JobControl.pm, rev 2.8)
 #@MODIFIED   : 
-#@VERSION    : $Id: Spawn.pm,v 1.9 1997-08-21 22:27:12 greg Rel $
+#@VERSION    : $Id: Spawn.pm,v 1.10 1997-09-25 18:48:11 greg Exp $
 #@COPYRIGHT  : Copyright (c) 1997 by Gregory P. Ward, McConnell Brain Imaging
 #              Centre, Montreal Neurological Institute, McGill University.
 #
@@ -379,6 +379,31 @@ sub spawn
    # program's exit status [this is not coincidental!].)
 
    return 0 unless $self->{execute};
+
+
+   # Figure out if the child should announce itself -- here we conspire
+   # with self_announce in MNI::Startup via an environment variable,
+   # inspirationally named `self_announce'.  It works as follows: here,
+   # we set `self_announce' to true or false, depending on whether the
+   # child should or should not announce its arguments to the world.
+   # (Basically, it should always do so, unless its output is being
+   # captured, or its output is not being redirected and we -- the
+   # parent -- have already printed the child command line.)  Then, in
+   # self_announce, the value of this variable is checked.  If it
+   # doesn't exist at all, then the child will assume it run by some
+   # non-Spawn-using program, and thus will announce itself.  Otherwise,
+   # it takes the advice of the environment variable and either
+   # announces itself or not.  (One subtlety: self_announce will not
+   # announce if its stdout is a tty.)
+
+#    false if $stdout_mode == CAPTURE;
+#    false if verbose and $stdout_mode == UNTOUCHED;
+#    [false if verbose and $stdout_mode == REDIRECT and stdout == loghandle]
+#    true otherwise.
+
+   $ENV{'suppress_announce'} = 
+      ($stdout_mode == CAPTURE) ||
+      ($self->{'verbose'} && $stdout_mode == UNTOUCHED);         
 
 
    # Now, we finally get to run the command.  This is done via either
@@ -828,6 +853,21 @@ sub exec_command
 
    if ($stdout_mode == REDIRECT)
    {
+      # Note to myself: it's possible to spawn a child with stdout 
+      # redirected to the same file as the parent is currently being
+      # logged to.  For instance, if the user runs "parent > log", and
+      # then spawns a child with stdout => 'log', this will happen.
+      # This is a bad thing -- the child's output gets all munged up.
+      # This happens even if the user ran "parent >> log".  It can 
+      # be detected, though -- just stat STDOUT and the caller-supplied
+      # log file; if the device and inode numbers are the same, we should
+      # print a warning before forking or redirecting.  HmmmMMMmmmm...
+
+      # Incidentally, if the parent forks a child with stdout => 'log',
+      # and then later on redirects its own stdout to the same place,
+      # all works out fine.  (Although I have only tried with both
+      # processes opening 'log' in append mode.)  HmmmMMMmm again!
+
       open (STDOUT, $stdout)
          || croak ("spawn: unable to redirect stdout to \"$stdout\": $!");
    }
