@@ -1,3 +1,46 @@
+Sat Aug  7 16:58:16 1999  Steve Robbins  <steve@nyongwa.montreal.qc.ca>
+
+	* MNI/Batch.pm: all package variables, other than @ISA,
+ 	@EXPORT_OK, and %EXPORT_TAGS localised with `my'.  Option
+ 	identifiers changed to "lower_case_underscore_separated", the
+ 	style used in MNI::Spawn.
+
+	* MNI/Batch.pm (StartJob): all parameters are optional, passed in
+ 	"key => value" style.  Return value changed to be the name of the
+ 	`start' sync file, if any; return value was previously the JobPID
+ 	(undocumented).
+
+	* MNI/Batch.pm (FinishJob): new option `close_delay' used if delay
+ 	not given as parameter.  Return value is name of `finish' sync
+ 	file, if any.
+
+	* MNI/Batch.pm (QueueCommand): QueueCommand() will call StartJob
+ 	and FinishJob if no job open; no longer carps about this usage.
+  	If QueueCommand calls FinishJob, the name of the `finish' sync
+ 	file, if any, is returned.
+
+	* MNI/Batch.pm (QueueCommands): if QueueCommands calls FinishJob,
+ 	the name of the `finish' sync file, if any, is returned.
+
+	* t/batch.t: updated to account for changes to Batch.pm; no new
+ 	test coverage.
+
+Fri Aug  6 18:09:11 1999  Steve Robbins  <steve@nyongwa.montreal.qc.ca>
+
+	* MNI/Spawn.pm (spawn): batch's QueueCommand option MergeErrors
+ 	became merge_stderr.
+
+Tue Jul 27 19:00:42 1999  Steve ROBBINS  <stever@bic.mni.mcgill.ca>
+
+	* MNI/Batch.pm (Synchronize): fix documentation of return value.
+  	Return ref to empty array if not executing.
+
+	* MNI/Batch.pm: Allow `JobName', `StartAfter', `MergeErrors',
+ 	`stdout', and `stderr' as global options.
+
+	* MNI/Spawn.pm (spawn): change parameters for Batch::QueueCommand
+ 	call.
+
 Thu Jul 22 19:52:36 1999  Steve ROBBINS  <stever@bic.mni.mcgill.ca>
 
 	* MNI/Batch.pm (gen_batch_options, StartJob, QueueCommand): allow

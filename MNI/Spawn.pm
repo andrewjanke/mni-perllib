@@ -15,7 +15,7 @@
 #@CREATED    : 1997/07/07, Greg Ward (loosely based on JobControl.pm, rev 2.8)
 #@MODIFIED   : 1998/11/06, Chris Cocosco (added batch support) -- STILL BETA!
 #
-#@VERSION    : $Id: Spawn.pm,v 1.12 1999-05-12 20:59:59 stever Exp $
+#@VERSION    : $Id: Spawn.pm,v 1.13 1999-08-07 22:46:45 stever Exp $
 #@COPYRIGHT  : Copyright (c) 1997 by Gregory P. Ward, McConnell Brain Imaging
 #              Centre, Montreal Neurological Institute, McGill University.
 #
@@ -393,8 +393,10 @@ sub spawn
        #
        croak "Batch package not loaded -- you must do \"use MNI::Batch;\""
 	   if (! defined &MNI::Batch::QueueCommand);
-       &MNI::Batch::QueueCommand( $command, "", 
-			    $stdout, $stderr, ($stderr_mode == MERGE));
+       &MNI::Batch::QueueCommand( $command, 
+				  stdout => $stdout, 
+				  stderr => $stderr, 
+				  merge_stderr => ($stderr_mode == MERGE) );
        return 0;
    }
 
