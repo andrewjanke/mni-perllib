@@ -53,36 +53,97 @@ MNI::Batch - execute commands via the UCSF Batch Queuing System
 
 =head1 DESCRIPTION
 
-F<MNI::Batch> provides a method to submit shell commands to the batch
-queuing system.
+F<MNI::Batch> provides a method to submit shell commands to the batch queuing
+system.  Commands are sent to the batch system in small sets, termed I<jobs>.  
+The commands in a job are all executed sequentially, though many jobs may
+be running concurrently.  The job is made up of all the commands submitted
+by C<QueueCommand> or C<QueueCommands> between C<StartJob> and C<FinishJob>.
+All commands are executed by /bin/sh, or other Bourne-compatible
+shell.
+
+
+=head1 OPTIONS
+
+The following options are used to modify the behaviour of the batch system.
+Once set (using C<MNI::Batch::SetOptions>) the options apply to all subsequent
+C<StartJob> invocations.
 
 =over 4
 
+=item Verbose          
+
+should we echo queue commands and other info?
+
+=item Execute          
+
+should we actually submit jobs?
+
+=item LogHandle        
+
+where to echo queue commands and other info
+
+=item Synchronize      
+
+can be "start", "finish", or "both"
+
+=item SyncDir          
+
+directory in which to put synchronization files.  Must be accessible from all
+hosts!
+
+=item ExportTmpDir     
+
+name of temporary directory to create when job is running
+
+=item NukeTmpDir       
+
+"rm -rf" the tmp dir when job finishes?
+
+=item CheckStatus      
+
+check each submitted command for success?
+
+=item Shell            
+
+shell to run under -- must be Bourne-shell compatible!!
+
+=item Host             
+
+explicitly specified host(s) to run on.  Multiple hosts can be specified
+using a space-, comma-, or semicolon-separated list of hostnames
+
+=item LocalHost        
+
+force to run on local host (unless Host option is set)
+
+=item Queue            
+
+which queue to run on
+
+=item Restartable      
+
+should job be restarted on crash (B<-R> option)?  Defaults to 1
+
+=item MailConditions   
+
+code for B<-m> option; default: 'cr' (crash or resource
+overrun only)
+
+=item MailAddress      
+
+address to mail to (B<-M> option)
+
+=item WriteConditions  
+
+code for B<-w> option; default '' (don't write)
+
+=item WriteAddress     
+
+address to mail to (B<-W> option)
+
+=back
+
 =cut
-
-# Package options (can be changed with &SetOptions)
-
-#    Verbose          should we echo queue commands and other info?
-#    Execute          should we actually submit jobs?
-#    LogHandle        where to echo queue commands and other info
-#    Synchronize      can be "start", "finish", or "both"
-#    SyncDir          directory to put sync. files in (must
-#                     be accessible from all hosts!)
-#    ExportTmpDir     name of temporary directory to create
-#                     when job is running
-#    NukeTmpDir       "rm -rf" the tmp dir when job finishes?
-#    Shell            shell to run under -- must be Bourne-shell compatible!!
-#    Host             explicitly specified host(s) to run on
-#                     (multiple hosts can be specified by means
-#                     [\s,;]+ separated string of hostnames)
-#    LocalHost        force to run on local host (unless $Host set)
-#    Queue            which queue to run on
-#    Restartable      should job be restarted on crash (-R option); default 1
-#    MailConditions   code for -m option; default: 'cr' (crash or resource
-#                     overrun only)
-#    MailAddress      address to mail to (-M option)
-#    WriteConditions  code for -w option; default '' (don't write)
-#    WriteAddress     address to mail to (-W option)
 
 %Options = (Verbose         => undef,
             Execute         => undef,
@@ -103,6 +164,12 @@ queuing system.
             WriteAddress    => '',
            );
 
+
+=head1 METHODS
+
+=over 4
+
+=cut
 
 # Package-private globals #############################################
 
@@ -158,7 +225,9 @@ sub gen_batch_options
    $options .= " -e $stderr" if $stderr;
    $options .= " -k" if $merge;
 
-   # Should we croak if $stdout && $stderr && $merge ?
+   # Does it make ssense to allow stdout, stderr, AND merge?
+   # The MNI::Spawn module, for instance, ignores the stderr file,
+   # and forces a merge, in this situation.
 
    $options;
 }
@@ -229,8 +298,8 @@ END
 
 =item MNI::Batch::SetOptions( option => value, ... )
 
-Used to set various batch-related options, which are briefly documented in the
-code.  Dies if any bad options are found.
+Set various batch-related options, documented in section L<"OPTIONS">.  
+Dies if any bad options are found.
 
 =cut
 
@@ -273,9 +342,10 @@ sub SetOptions
 
 =item StartJob( jobname, stdout, stderr, merge )
 
-Create a new job,
-Opens a pipe to `batch', into which commands may be fed by calling
-QueueCommand.
+Start a new batch job.  Commands for this job are then submitted by calling
+C<QueueCommand> or C<QueueCommands>.  Once all commands are queued,
+C<FinishJob> is called.  You must call C<FinishJob> before starting another
+job.
 
 =cut 
 
@@ -360,7 +430,9 @@ END
 
 =item FinishJob( [delay] )
 
-Close the currently-opened job.  Optionally, sleep for I<delay> seconds.
+Called after all commands have been queued for the currently-opened job.
+This function submits the list of commands to the batch queue.
+Optionally, sleep for I<delay> seconds.
 
 =cut
 
@@ -394,7 +466,8 @@ sub FinishJob
        return;
    }
 
-   if ($Options{'Synchronize'} eq "finish" || $Options{'Synchronize'} eq "both")
+   if ($Options{'Synchronize'} eq "finish" ||
+       $Options{'Synchronize'} eq "both")
    {
       &create_sync_file ("finish", $Options{'SyncDir'}, $JobName{$JobPID},
                           $ENV{'HOST'}, $JobPID, \%SyncFiles);
@@ -535,7 +608,7 @@ sub Synchronize
 }
 
 
-=item QueueCommand( command [,jobname, stdout, stderr, merge] ) 
+=item QueueCommand( command, jobname, stdout, stderr, merge ) 
 
 If there is an open batch job, (created with StartJob) add the command to it.
 Otherwise create a new job to run just this command.
@@ -669,7 +742,7 @@ sub QueueCommands
    unless ($JobPID)	# no batch job open already?
    {
       $exclusive = 1;		# this will be ours to close when done
-      &StartBatchJob ($jobname, $stdout, $stderr, $merge);
+      StartJob ($jobname, $stdout, $stderr, $merge);
    }
 
    my $cmd;
@@ -678,7 +751,7 @@ sub QueueCommands
       &QueueCommand ($cmd);
    }
 
-   &FinishJob () if $exclusive;
+   FinishJob () if $exclusive;
 }
 
 =back
