@@ -11,7 +11,7 @@
 #@REQUIRES   : Exporter
 #@CREATED    : 1997/07/07, Greg Ward (loosely based on JobControl.pm, rev 2.8)
 #@MODIFIED   : 
-#@VERSION    : $Id: Spawn.pm,v 1.3 1997-07-25 01:45:20 greg Exp $
+#@VERSION    : $Id: Spawn.pm,v 1.4 1997-07-25 02:38:40 greg Exp $
 #@COPYRIGHT  : Copyright (c) 1997 by Gregory P. Ward, McConnell Brain Imaging
 #              Centre, Montreal Neurological Institute, McGill University.
 #
@@ -21,13 +21,6 @@
 #-----------------------------------------------------------------------------
 
 package MNI::Spawn;
-
-# IDEA:
-#
-# if variable-to-capture-to is a scalar ref, then the output is a single
-# string with "\n"'s preserved; if it's an array ref, then preserve
-# the output as a list-of-lines (chomp'ed)
-
 
 use strict;
 use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS);
@@ -73,6 +66,17 @@ my %DefaultOptions =
     stdout       => undef,              # what to do with stdout
     stderr       => undef);             # what to do with stderr
 
+
+# ----------------------------------------------------------------------
+# The public part of the object-oriented interface:
+#   new
+#   copy
+#   set_options
+#   find_programs
+#   add_default_args
+#   clear_default_args
+#   spawn
+# ----------------------------------------------------------------------
 
 # ------------------------------ MNI Header ----------------------------------
 #@NAME       : new
@@ -146,24 +150,6 @@ sub set_options
 
 
 # ------------------------------ MNI Header ----------------------------------
-#@NAME       : set_undefined_option
-#@INPUT      : 
-#@OUTPUT     : 
-#@RETURNS    : 
-#@DESCRIPTION: 
-#@CREATED    : 1997/07/07, GPW
-#@MODIFIED   : 
-#-----------------------------------------------------------------------------
-sub set_undefined_option
-{
-   my ($self, $option, $value) = @_;
-
-   $self->{$option} = $value 
-      unless defined $self->{$option};
-}
-
-
-# ------------------------------ MNI Header ----------------------------------
 #@NAME       : find_programs
 #@INPUT      : 
 #@OUTPUT     : 
@@ -209,22 +195,26 @@ sub find_programs
 #-----------------------------------------------------------------------------
 sub add_default_args
 {
-   my ($self, $program, $args, $where) = @_;
+   my ($self, $programs, $args, $where) = @_;
 
    croak "add_default_args: if given, \$where must be 'pre' or 'post'"
       if defined $where and $where !~ /^(pre|post)$/;
-   croak "add_default_args: \$args must be an array ref"
-      unless ref $args eq 'ARRAY';
+   croak "add_default_args: \$programs must be an array ref or string"
+      unless ref $programs eq 'ARRAY' || ! ref $programs;
+   croak "add_default_args: \$args must be an array ref or string"
+      unless ref $args eq 'ARRAY' || ! ref $args;
 
    $where ||= 'pre';
-   my @programs = (ref $program eq 'ARRAY') ? (@$program) : ($program);
+   my @programs = (ref $programs eq 'ARRAY') ? (@$programs) : ($programs);
+   my @args = (ref $args eq 'ARRAY') ? (@$args) : ($args);
 
+   my $program;
    foreach $program (@programs)
    {
       carp ("add_default_args: warning: " .
             "adding default arguments for unregistered program \"$program\"")
          if ($self->{strict} && ! exists $self->{programs}{$program});
-      push (@{$self->{defargs}{$where}{$program}}, @$args);
+      push (@{$self->{defargs}{$where}{$program}}, @args);
    }
 }
 
@@ -391,6 +381,7 @@ sub spawn
 # End of externally-used stuff -- now come the methods and subroutines
 # only called internally (i.e. by `spawn' itself or by other interal
 # routines):
+#   set_undefined_option (method)
 #   check_program    (method)
 #   complete_command (method)
 #   output_mode      (subroutine)
@@ -401,6 +392,24 @@ sub spawn
 #   spawn_capture    (method)
 #   spawn_redirect   (method)
 # ----------------------------------------------------------------------
+
+# ------------------------------ MNI Header ----------------------------------
+#@NAME       : set_undefined_option
+#@INPUT      : 
+#@OUTPUT     : 
+#@RETURNS    : 
+#@DESCRIPTION: 
+#@CREATED    : 1997/07/07, GPW
+#@MODIFIED   : 
+#-----------------------------------------------------------------------------
+sub set_undefined_option
+{
+   my ($self, $option, $value) = @_;
+
+   $self->{$option} = $value 
+      unless defined $self->{$option};
+}
+
 
 # ------------------------------ MNI Header ----------------------------------
 #@NAME       : check_program
@@ -886,8 +895,10 @@ EOM
    }
 
    $program
-      ? die "$::ProgramName: crashed while running $program\n"
-      : die "$::ProgramName: crashed while running another program\n";
+      ? die "$::ProgramName: crashed while running $program " .
+            "(termination status=$status)\n"
+      : die "$::ProgramName: crashed while running another program " .
+            "(termination status=$status)\n";
 
 }  # obituary   
    
@@ -1136,5 +1147,18 @@ sub spawn_redirect
 
    return $status;
 }
+
+
+# ----------------------------------------------------------------------
+# The conventional, subroutine interface
+# ----------------------------------------------------------------------
+
+my $default_spawner = new MNI::Spawn;
+
+sub SetOptions        { $default_spawner->set_options (@_); }
+sub FindPrograms      { $default_spawner->find_programs (@_); }
+sub AddDefaultArgs    { $default_spawner->add_default_args (@_); }
+sub ClearDefaultArgs  { $default_spawner->clear_default_args (@_); }
+sub Spawn             { $default_spawner->spawn (@_); }
 
 1;
