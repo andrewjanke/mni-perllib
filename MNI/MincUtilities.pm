@@ -12,7 +12,7 @@
 #@REQUIRES   : Exporter
 #@CREATED    : 1997/08/07, Greg Ward (from minc_utilities.pl, revision 1.16)
 #@MODIFIED   : 
-#@VERSION    : $Id: MincUtilities.pm,v 1.2 1997-08-13 14:13:36 greg Exp $
+#@VERSION    : $Id: MincUtilities.pm,v 1.3 1997-08-18 21:16:11 greg Exp $
 #@COPYRIGHT  : Copyright (c) 1997 by Gregory P. Ward, McConnell Brain Imaging
 #              Centre, Montreal Neurological Institute, McGill University.
 #
@@ -24,11 +24,12 @@
 package MNI::MincUtilities;
 
 use strict;
-use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $Execute);
+use vars qw(@ISA @EXPORT_OK %EXPORT_TAGS
+            $Execute $Spawner);
 
 require 5.002;
 require Exporter;
-#require AutoLoader;
+require AutoLoader;
 
 use Carp;
 
@@ -37,7 +38,6 @@ use MNI::NumericUtilities qw(round);
 use MNI::MiscUtilities qw(userstamp timestamp shellquote);
 
 @ISA = qw(Exporter);
-@EXPORT = ();
 @EXPORT_OK = qw(volume_min volume_max volume_minmax
                 percent_threshold auto_threshold volume_cog
                 get_history put_history update_history
@@ -51,6 +51,23 @@ use MNI::MiscUtilities qw(userstamp timestamp shellquote);
                 args     => [qw(compute_resample_args
                                 compute_reshape_args)],
                 all      => \@EXPORT_OK);
+
+*AUTOLOAD = \&AutoLoader::AUTOLOAD;
+
+$Spawner = new MNI::Spawn (verbose => 0,
+                           execute => undef,
+                           strict  => 0,
+                           search  => 0);
+
+if (! defined $main::Execute)
+{
+   warn "MNI::MincUtilities: warning: \$main::Execute not defined " .
+        "(assuming true) -- did you use MNI::Startup?\n";
+   $main::Execute = 1;
+}
+*Execute = \$main::Execute;
+
+__END__
 
 =head1 NAME
 
@@ -173,7 +190,7 @@ For example, to import the names of all the volume range functions:
 
 Finally, an C<all> tag is provided to import all exportable symbols.
 
-=head1 OPTIONAL EXECUTION
+=head1 EXECUTION CONTROL
 
 In order to cooperate better with other programs and modules,
 F<MNI::MincUtilities> makes an effort to respect the global C<$Execute>
@@ -221,22 +238,6 @@ dimension list, and (0,1,2) for order and permutation vectors.  (See
 C<volume_params> and C<get_dimension_order> for more information on this
 arcana.)
 
-=cut
-
-my $spawner = new MNI::Spawn (verbose => 0,
-                              execute => undef,
-                              strict  => 1,
-                              search  => 0);
-
-if (! defined $main::Execute)
-{
-   warn "MNI::MincUtilities: warning: \$main::Execute not defined -- " .
-      "did you use MNI::Startup? (assuming true)\n";
-   $main::Execute = 1;
-}
-*Execute = \$main::Execute;
-
-
 =head1 SUBROUTINES
 
 =head2 Volume range
@@ -258,7 +259,7 @@ sub volume_min
    
    if ($Execute)
    {
-      $spawner->spawn (['mincinfo', '-varvalue', 'image-min', $volume],
+      $Spawner->spawn (['mincinfo', '-varvalue', 'image-min', $volume],
                        stdout => \@image_min);
       $volmin = (sort { $a <=> $b } @image_min)[0];
    }
@@ -283,7 +284,7 @@ sub volume_max
    
    if ($Execute)
    {
-      $spawner->spawn (['mincinfo', '-varvalue', 'image-max', $volume],
+      $Spawner->spawn (['mincinfo', '-varvalue', 'image-max', $volume],
                        stdout => \@image_max);
       $volmax = (sort { $a <=> $b } @image_max)[-1];
    }
@@ -349,7 +350,7 @@ sub auto_threshold
    my $threshold;
    if ($Execute)
    {
-      $spawner->spawn (['volume_stats', '-biModalT', '-quiet', $volume],
+      $Spawner->spawn (['volume_stats', '-biModalT', '-quiet', $volume],
                        stdout => \$threshold);
       chop $threshold;
    }
@@ -397,7 +398,7 @@ sub get_history
    return () unless $Execute;
 
    @cmd = qw(mincinfo -error_string "" -attvalue :history);
-   $spawner->spawn ([@cmd, $volume], stdout => \@history);
+   $Spawner->spawn ([@cmd, $volume], stdout => \@history);
    pop @history if $history[-1] eq '';
    @history;
 }
@@ -445,7 +446,7 @@ sub put_history
 
    return unless $Execute;
    $history = join ("\n", @history) . "\n";
-   $spawner->spawn (['minc_modify_header', $volume, '-sinsert', 
+   $Spawner->spawn (['minc_modify_header', $volume, '-sinsert', 
                      ":history=$history"]);
 }
 
@@ -591,7 +592,7 @@ sub volume_cog
    if ($Execute)
    {
       my @out;
-      $spawner->spawn (['volume_cog', $volume], stdout => \@out);
+      $Spawner->spawn (['volume_cog', $volume], stdout => \@out);
       @cog = split (' ', $out[-1]);
    }
    else
@@ -669,7 +670,7 @@ sub volume_params
 
    if ($Execute)
    {
-      $spawner->spawn (\@cmd, stdout => \@output);
+      $Spawner->spawn (\@cmd, stdout => \@output);
       grep (s/ ( ^ \s+ ) | ( \s+ $ ) //xg, @output);
    }
    else
@@ -781,7 +782,7 @@ sub get_dimension_order
       my $dimlist;
       if ($Execute)
       {
-         $spawner->spawn (['mincinfo', '-dimnames', $volume],
+         $Spawner->spawn (['mincinfo', '-dimnames', $volume],
                           stdout => \$dimlist);
          chop $dimlist;
          @dimlist = split (/\s+/, $dimlist);
