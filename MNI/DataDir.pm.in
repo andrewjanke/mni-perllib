@@ -9,7 +9,7 @@
 #              static (model) data.
 #@CREATED    : 
 #@MODIFIED   : 
-#@VERSION    : $Id: DataDir.pm.in,v 1.1 1997-09-16 17:12:18 greg Exp $
+#@VERSION    : $Id: DataDir.pm.in,v 1.2 1997-09-16 19:23:09 greg Exp $
 #@COPYRIGHT  : Copyright (c) 1997 by Gregory P. Ward, McConnell Brain Imaging
 #              Centre, Montreal Neurological Institute, McGill University.
 #
@@ -66,20 +66,18 @@ and to ensure that all the required model files are present:
    MNI::DataDir::check_data ($ModelDir, \@files);
 
 (In reality, C<mritotal> allows a user-defined model, so the
-C<'average_305'> string isn't fixed.  But that's not important here.)
+C<'average_305'> string isn't fixed.  But that's not relevant here.)
 
 From the user's perspective, things are equally simple: there is a
 default directory hard-coded into F<MNI::DataDir>, which is selected by
 the system administrator when the MNI Perl Library is built and
-installed.  The distribution default is F</usr/local/mni/data>, so we
-will assume this is the default directory for the sake of the following
-explanations.
+installed.  The hard-coded default for the version of F<MNI::DataDir>
+that you're currently reading about is F<@DEFAULT_DATA_DIR@>.
 
 Normally, C<MNI::DataDir::dir> looks under this default directory for a
-package-specific data directory---for instance, in the above example,
-assuming a default base directory of F</usr/local/mni/data>, it would
-look for F</usr/local/mni/data/autoreg>.  If this directory isn't found,
-C<MNI::DataDir::dir> will C<die>, crashing your program with an
+package-specific data directory---for instance, in the above example,it
+would look for F<@DEFAULT_DATA_DIR@/autoreg>.  If this directory isn't
+found, C<MNI::DataDir::dir> will C<die>, crashing your program with an
 appropriate error message for the end user.
 
 However, the user may override this default directory by setting the
@@ -94,11 +92,13 @@ I<not> fallback to the default directory.
 # Note that we check for the environment variable *only* here -- i.e.
 # when the module is run, which happens at the program's compile-time.
 # Thus, the program cannot override the default path by setting the
-# environment variable before calling `dir'.   
+# environment variable before calling `dir'.  (Except by setting it in a
+# BEGIN block before `use'ing MNI::DataDir.  But that would be very
+# rude.)
 
 my @search_path = exists $ENV{'MNI_DATAPATH'}
    ? split (':', $ENV{'MNI_DATAPATH'})
-   : ('/usr/local/mni/data');
+   : ('@DEFAULT_DATA_DIR@');
 my $program_name = $MNI::Startup::ProgramName || $::ProgramName || $0;
 
 
