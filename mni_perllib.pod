@@ -1,0 +1,73 @@
+=head1 NAME
+
+mni_perllib - The MNI Perl Library
+
+=head1 SYNOPSIS
+
+   use MNI::Startup;
+   use MNI::Spawn
+   use MNI::Batch;
+
+   use MNI::MiscUtilities;
+   use MNI::FileUtilities;
+   use MNI::PathUtilities;
+   use MNI::NumericUtilities;
+
+   use MNI::NetCDF;                  # not yet!
+   use MNI::MINC;
+   use MNI::MINC::Utility;
+
+=head1 DESCRIPTION
+
+The MNI Perl Library is a collection of Perl modules designed to aid in
+the writing of programs that process large amounts of data by running
+low-level programs to do the real number crunching---in other words,
+glorified shell scripts.  The hallmarks of such programs are long
+running times (from a few minutes to several hours), several large
+temporary files, and a steady stream of launching other programs to
+gradually transform the input file(s) into output file(s), via those
+temporary files.  
+
+Desirable characteristics of such programs are that they write their
+temporary files in a uniquely-named directory that is cleaned up when
+they complete successfully or crash; that they print an explicit account
+both of their own command line and of all commands that they execute;
+that the failure of any individual sub-program automatically causes the
+failure of the whole procedure; and that all of the above can be
+custom-controlled both by the programmer and the end user.  All of these
+features and many more are provided by the MNI Perl Library, mostly
+concentrated in the F<MNI::Startup> and F<MNI::Spawn> modules.  Many
+other useful routines for interacting with the filesystem, performing
+common string hacks on Unix filenames, performing common numeric hacks,
+and so forth are provided by the other modules.
+
+Each individual module is documented in the normal way, so you should be
+able to get documentation by typing (e.g.)
+
+   man MNI::FileUtilities
+
+at a shell prompt.  If that doesn't work, complain to your system
+administrator, adjust your C<MANPATH> environment variable to point to
+the appropriate place, or try
+
+   perldoc MNI::FileUtilities
+
+In addition, there is a document called "Tips for Perl Hackers: A Guide
+to the MNI Perl Library" that contains a higher-level view and lots of
+useful tips that don't really belong in the documentation for individual
+modules.  This document is distributed with the library; check the
+distribution or ask your system administrator where it can be found.
+It will eventually be available online via the World-Wide Web.
+
+=head1 AUTHOR
+
+Greg Ward, greg@bic.mni.mcgill.ca.
+
+=head1 COPYRIGHT
+
+Copyright (c) 1997 by Gregory P. Ward, McConnell Brain Imaging Centre,
+Montreal Neurological Institute, McGill University.
+
+This file is part of the MNI Perl Library.  It is free software, and may
+be distributed under the same terms as Perl itself.
+
