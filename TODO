@@ -1,0 +1,45 @@
+DOCS
+----
+
+
+CODE
+----
+
+* get (and implement!) Alex' suggestions for NumericUtilities
+
+* proper support for redirecting to filehandles (ie. use fileno to 
+  determine if it's a valid fh, and then redirect to ">&=" . fileno
+  (rtfm -- the '=' might not be necessary!)
+
+* Startup: make nocputimes and nostartdir the default (the former because
+  it's often annoying, the latter because it's not often needed and greatly
+  increases the module's overhead)
+
+
+AUXILIARY MODULES
+-----------------
+
+* catchup on backlog of Getopt::Tabular fixes -- esp. add a 'dir' type
+  (doesn't do anything to filesystem, just makes sure of a trailing slash)
+
+* also, go over the Getopt::Tabular docs in detail for consistent style
+
+* revamp File::Tokenize and add it to the library
+
+
+BUILD PROCESS
+-------------
+* figure out how to add a "doc" target to main Makefile
+
+* figure out how doc/Makefile can know the "real" perl (ie. what
+  was used to run Makefile.PL) -- do I need a Makefile.PL in
+  that directory too???
+
+
+TESTING
+-------
+* datadir.t mysteriously fails on SunOS, but only when being run directly;
+  when run by Test::Harness (through a pipe) it works fine.  Huh?!?!?!!?
+
+* checkdirs.t assumes that /tmp/foo doesn't already exist -- should generate
+  a unique base dir name before the check_output_path tests

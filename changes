@@ -1,0 +1,133 @@
+MANIFEST:
+  [rev 1.2, 1997/09/30]
+    Added t/toy_ls.in.
+
+MNI.pm:
+  [rev 1.2, 1997/10/03]
+    Changed to version 0.05
+
+MNI/DataDir.pm.in:
+  [rev 1.6, 1997/09/30]
+    Silenced -w under pre-5.004 versions of Perl.
+  [rev 1.5, 1997/09/29]
+    Added install_dir to the synopsis.
+
+MNI/FileUtilities.pm:
+  [rev 1.12, 1997/10/03]
+    Fixed up the synopsis
+  [rev 1.11, 1997/10/03]
+    Pod fix: standardized F<> notation for naming modules.
+  [rev 1.10, 1997/10/02]
+    Standardized all em-dashes to '---'.
+  [rev 1.9, 1997/09/30]
+    Changed search_directories to make a copy of the supplied search path
+    and call normalize_dirs on that copy.
+
+MNI/MincUtilities.pm:
+  [rev 1.8, 1997/10/03]
+    Fixed up the synopsis
+  [rev 1.7, 1997/10/03]
+    Pod fix: standardized F<> notation for naming modules.
+  [rev 1.6, 1997/10/02]
+    Standardized all em-dashes to '---'.
+
+MNI/MiscUtilities.pm:
+  [rev 1.7, 1997/10/03]
+    Fixed up the synopsis
+  [rev 1.6, 1997/10/03]
+    Pod fix: standardized F<> notation for naming modules.
+  [rev 1.5, 1997/10/02]
+    Standardized all em-dashes to '---'.
+
+MNI/NumericUtilities.pm:
+  [rev 1.3, 1997/10/03]
+    Fixed up the synopsis
+  [rev 1.2, 1997/10/03]
+    Pod fix: standardized F<> notation for naming modules.
+
+MNI/PathUtilities.pm:
+  [rev 1.10, 1997/10/03]
+    Pod fix: standardized F<> notation for naming modules.
+  [rev 1.9, 1997/10/02]
+    Standardized all em-dashes to '---'.
+
+MNI/Spawn.pm:
+  [rev 1.11, 1997/10/01]
+    Added "hash ref" mode to register_programs.
+  [rev 1.10, 1997/09/25]
+    Changed to possibly set the `suppress_announce' environment variable
+    before spawning.
+
+MNI/Spawn.pod:
+  [rev 1.12, 1997/10/01]
+    Added mention of autoflush when redirecting to a filehandle.
+  [rev 1.11, 1997/10/01]
+    Documented the "hash ref" mode of RegisterPrograms.
+  [rev 1.10, 1997/10/01]
+    Rewrote the "Redirection to a file (or filehandle)" section.
+  [rev 1.9, 1997/09/25]
+    Added the "interface to MNI::Startup" section on the `suppress_announce'
+    environment variable conspiracy.
+
+MNI/Startup.pm:
+  [rev 1.10, 1997/09/30]
+    Added the $orig_tmpdir stuff to ensure that we only nuke the temp directory
+      we originally cook up in &startup.
+    Rejiggered things to delay/avoid loading other modules if possible (~50%
+      reduction in module overhead!).
+    Changes to &startup:
+      * only calls getcwd if necessary
+      * makes $TmpDir into an absolute path in case TMPDIR env var is relative
+        (thus simplified &cleanup to remove the return-to-$StartDir business)
+    Revamped most of the docs explaining $TmpDir and cleanup; a few other
+      small improvements.
+  [rev 1.9, 1997/09/30]
+    Changed so we only search %SIG for "known signals" under Perl 5.004 or later.
+  [rev 1.8, 1997/09/25]
+    Changed self_announce to pay attention to the `suppress_announce'
+    environment variable, possibly set by the parent before spawning.
+
+Makefile.PL:
+  [rev 1.5, 1997/10/01]
+    Added generation (and cleanup) of t/toy_ls.
+  [rev 1.4, 1997/09/24]
+    Added MY::dist.
+
+doc/Makefile:
+  [rev 1.2, 1997/10/01]
+    Added MNI/DataDir.pm to SOURCE macro.
+
+t/fork_test.pl:
+  [rev 1.2, 1997/09/30]
+    Made 'debugging' stuff require $DEBUG >= 2 (or >= 3 in some cases).
+
+t/mincutil.t:
+  [rev 1.2, 1997/09/25]
+    Fixed to chmod $testcopy after creating it.
+
+t/searchfiles.t:
+  [rev 1.2, 1997/09/30]
+    Added tests to ensure that search_directories doesn't modify its arguments.
+    Changed some tests to expect '' from search_directories (only when '' is
+      in the path).
+
+t/spawn.t:
+  [rev 1.4, 1997/10/01]
+    Added "redirect to filehandle" and "register w/ specific override" tests.
+    Now uses FileHandle module.
+    Requires $DEBUG >= 2 to dump file lists.
+  [rev 1.3, 1997/09/30]
+    Fixed to add '.' to PATH.
+  [rev 1.2, 1997/09/30]
+    Changed to use toy_ls instead of ls.
+
+t/startup.t:
+  [rev 1.4, 1997/09/30]
+    Fixed to print the correct number of expected tests.
+  [rev 1.3, 1997/09/30]
+    Added 'cleanup of relative temp directory' test.
+  [rev 1.2, 1997/09/30]
+    Added 'non-cleanup of custom temp directory' test.
+    Changed the 'undefined $TmpDir' test -- this now means the tmp dir
+      will get cleaned up anyways!
+

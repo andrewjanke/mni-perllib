@@ -1,0 +1,14 @@
+package Foo;
+
+$foovar = 37;
+
+package main;
+
+$package = 'Foo';
+$varname = 'foovar';
+
+print "The value of $package\::$varname is $Foo::foovar\n";
+
+# hmm, if I do it this way:
+print "The value of ${package}::$varname is $Foo::foovar\n";
+# I get a spurious warning about "ambiguous use of ${package}"... ??!

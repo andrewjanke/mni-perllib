@@ -1,0 +1,1 @@
+setenv PERLLIB ./blib/arch:./blib/lib
