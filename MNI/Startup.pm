@@ -8,7 +8,7 @@
 #@REQUIRES   : Exporter
 #@CREATED    : 1997/07/25, Greg Ward (from old Startup.pm, rev. 1.23)
 #@MODIFIED   : 
-#@VERSION    : $Id: Startup.pm,v 1.7 1997-09-18 18:49:11 greg Rel $
+#@VERSION    : $Id: Startup.pm,v 1.8 1997-09-25 20:13:05 greg Exp $
 #@COPYRIGHT  : Copyright (c) 1997 by Gregory P. Ward, McConnell Brain Imaging
 #              Centre, Montreal Neurological Institute, McGill University.
 #
@@ -607,7 +607,7 @@ END
 
 In addition to the startup/shutdown services described above,
 F<MNI::Startup> also provides a couple of subroutines that are handy in
-certain applications.  These subroutines will be exported into your
+many applications.  These subroutines will be exported into your
 program's namespace if the C<subs> option is true (as always, the
 default); if you instead supply C<nosubs> in F<MNI::Startup>'s import
 list, they will of course still be available as
@@ -631,51 +631,53 @@ can be avoided without much trouble.  The three-argument form of
 C<Getopt::Tabular::GetOptions>, in particular, is designed to help you
 avoid clobbering C<@ARGV>.)
 
-Normally, C<self_announce> will only print its announcement if LOG
-(usually, STDOUT) is I<not> a tty---i.e., your program's output is being
-redirected to a file or pipe.  This prevents pointlessly cluttering the
-display in an interactive run, but gives the user a record of exactly
-what command he ran to generate a particular log file (and the
-associated results).  If you supply a true value for FORCE, then
-C<self_announce> will print its message regardless of the stream you're
-sending it to.
+In general, you should put a call to C<self_announce> somewhere in your
+program after all arguments have been validated, so you know that you're
+not going to crash immediately.  If your program calls C<backgroundify>,
+it's not necessary to also call C<self_announce> in the same run, as
+C<backgroundify> calls C<self_announce>.  Thus, in programs that put
+themselves into the background, you might see code like this:
 
-In the future, C<self_announce> may become even more picky, and only
-print its announcement if it appears to have been run directly from a
-user's shell or batch job, and not by some other program.  The idea here
-is that the program that runs your program should have printed out the
-arguments used, so your program doesn't have to---again, this would be
-to cut down clutter (particularly when the two programs share a log
-file).
+   $background ? backgroundify ($logfile) : self_announce;
+
+It shouldn't be necessary to put conditions on the call to
+C<self_announce> (as was the case in versions of the MNI Perl Library up
+to 0.04).  That's because there are (currently) two conditions that will
+cause C<self_announce> to suppress its announcement for you. (You can
+always override this and force it to print its message by supplying a
+true value for FORCE.)
+
+First, if LOG is a tty, C<self_announce> will return without doing
+anything.  That is, your program's output must be redirected to a file
+or pipe for the announcement to be made.  This prevents pointlessly
+cluttering the display in an interactive run, but gives the user a
+record of exactly what command he ran to generate a particular log file
+(and the associated results).  (The assumption here is that if a
+program's output is important enough to log, it's important to know the
+exact command executed.  If the user didn't bother to log the output, he
+probably just ran the program from a shell, and can get back the command
+used anyways.)
+
+Second, if the environment variable C<suppress_announce> is set to a
+true value, no announcement will be printed.  This variable is normally
+set by the F<MNI::Spawn> module; when C<Spawn> considers it unnecessary
+for its child program (the program that eventually calls
+C<self_announce>) to print out its arguments, then it will set this
+environment variable.  The assumption here is that if C<Spawn> already
+printed out the program name and arguments, and the program's output is
+not being redirected elsewhere, then it's not necessary for the child to
+replicate this information.  See L<MNI::Spawn> for full details.  If
+C<self_announce> does not find C<suppress_announce> in its environment,
+then it is naturally treated as false.  If it is found, it is deleted,
+so as not to affect other programs that might be called by your program.
+(Of course, if you use F<MNI::Spawn>, then C<suppress_announce> will be
+set all over again.  It's only if you don't use F<MNI::Spawn> to run
+your child programs that this matters.)
+
+Again, you can override the "is it a tty?" or "is C<suppress_announce>
+set?" shenanigans by simply setting FORCE to true.
 
 =cut
-
-# a note on the last paragraph there: if it weren't for batch, it would be
-# enough to check if the current process is a process group leader ($$ ==
-# getpgrp), since commands run directly by a user from a shell are group
-# leaders, and proceses spawned by them are not.  But the situation is
-# different in a batch job: the shell that runs the "df*" script is the
-# process group leader (spawned by batchd), so the program it runs is not.
-# If the program were exec'd by that shell, it'd work -- but since I don't
-# have control over every batch job submitted, that's not good enough.
-# Hmmm.
-
-# I wonder if there's a way to check if program_name(getppid) =~ /^df/.
-# Hmmm.
-
-# whoops, another problem -- 'at' and 'cron' jobs are in the process group
-# of the cron daemon.  They should be self-announced too.
-
-# One possible solution is to assume that self_announce'ing programs will
-# be spawned by other self_announce'ing programs, and check/set a secret
-# environment variable to ensure that only one program in a chain of such
-# programs gets to self_announce.
-
-# Or, since it's MNI::Spawn that prints its child's command, have 
-# exec_command set an environment variable that is checked here.
-# It should encode the pid and program name of the child program, so 
-# we can be sure we're looking at the right thing.
-
 
 # ------------------------------ MNI Header ----------------------------------
 #@NAME       : self_announce
@@ -706,7 +708,11 @@ sub self_announce
    $args = \@ARGV unless defined $args;
 
    # don't do it if it would go to a terminal (unless we're forced to)
-   return if !$force && -t fileno ($log);
+   my $suppress = $ENV{'suppress_announce'};
+   delete $ENV{'suppress_announce'};
+   return 
+      if (-t fileno ($log) || $suppress) && !$force;
+         
 
    printf $log ("[%s] [%s] running:\n", 
                 userstamp (undef, undef, $StartDir), timestamp ());
@@ -870,7 +876,7 @@ sub backgroundify
    @start_times = times
       if ($options{'cputimes'});
    setpgrp;
-   self_announce (\*STDOUT, $program, $args); # this will go to the log file!
+   self_announce (\*STDOUT, $program, $args, 1);
 
    return 1;                            # return OK in new process
 
