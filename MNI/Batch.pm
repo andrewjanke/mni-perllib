@@ -12,7 +12,7 @@
 #@CREATED    : 95/11/13, Greg Ward
 #@MODIFIED   : 98/11/06, Chris Cocosco: -ported from Batch.pm ... (STILL BETA!)
 #@MODIFIED   : (...see CVS for more history info)
-#@VERSION    : $Id: Batch.pm,v 1.17 2001-06-11 16:06:29 stever Exp $
+#@VERSION    : $Id: Batch.pm,v 1.18 2001-06-11 16:33:53 stever Exp $
 #-----------------------------------------------------------------------------
 require 5.002;
 
@@ -29,7 +29,7 @@ use MNI::Spawn ();
 
 
 @ISA = qw(Exporter);
-@EXPORT_OK = qw(StartJob FinishJob Synchronize 
+@EXPORT_OK = qw(StartJob FinishJob Synchronize
 		QueueCommand QueueCommands);
 %EXPORT_TAGS = (all => [@EXPORT_OK]);
 
@@ -73,11 +73,11 @@ C<StartJob> invocations.
 
 =over 4
 
-=item verbose          
+=item verbose
 
 should we echo queue commands and other info?
 
-=item loghandle        
+=item loghandle
 
 where to echo queue commands and other info
 
@@ -85,28 +85,28 @@ where to echo queue commands and other info
 
 should the underlying batch process run in verbose mode?
 
-=item execute          
+=item execute
 
 should we actually submit jobs?
 
-=item check_status      
+=item check_status
 
 check each submitted command for success?
 
-=item export_tmpdir     
+=item export_tmpdir
 
 name of temporary directory to create when job is running
 
-=item nuke_tmpdir       
+=item nuke_tmpdir
 
 "rm -rf" the tmp dir when job finishes?
 
-=item synchronize      
+=item synchronize
 
 set to "start", "finish", "both", to create appropriate syncfiles; or
 set to undef (default) for no synchronization.
 
-=item syncdir          
+=item syncdir
 
 directory in which to put synchronization files.  Must be accessible from all
 hosts!
@@ -120,7 +120,7 @@ number of seconds to sleep after submitting a job.  Defaults to zero.
 string to identify job, passed as B<-J> option to C<batch>; the default is empty.
 This option is more usually passed in the call to C<StartJob>.
 
-=item queue            
+=item queue
 
 which queue to run on
 
@@ -130,37 +130,37 @@ specifies that the job will wait for some event before starting -- a
 certain time, e.g. "two hours", or a file creation.  Passed as B<-a>
 option to C<batch>.
 
-=item localhost        
+=item localhost
 
-force to run on local host (unless host option is set)
+force to run on local host (mutually exclusive to host option)
 
-=item host             
+=item host
 
 explicitly specified host(s) to run on.  Multiple hosts can be specified
 using a space-, comma-, or semicolon-separated list of hostnames
 
-=item restartable      
+=item restartable
 
 should job be restarted on crash (B<-R> option)?  Defaults to 1
 
-=item shell            
+=item shell
 
 shell to run under -- must be Bourne-shell compatible!!
 
-=item mail_conditions   
+=item mail_conditions
 
 code for B<-m> option; default: 'cr' (crash or resource
 overrun only)
 
-=item mail_address      
+=item mail_address
 
 address to mail to (B<-M> option)
 
-=item write_conditions  
+=item write_conditions
 
 code for B<-w> option; default '' (do not write)
 
-=item write_address     
+=item write_address
 
 address to mail to (B<-W> option)
 
@@ -255,6 +255,13 @@ my %JobName = ();
 # filename.
 #
 my %SyncFiles = ();
+
+# Cache output of "baq" command to avoid running it each
+# time JobStatus() is invoked.  We need separate caches for
+# each queue.
+#
+my %BAQ_cache;
+my $BAQ_cache_timeout = 60;  #seconds
 
 
 # Input: condition [, pid]
@@ -705,7 +712,7 @@ StartJob and FinishJob, depending on the value of the synchronize option.
 
 =cut
 
-sub Synchronize 
+sub Synchronize
 {
    croak ("MNI::Batch::Synchronize: wrong number of arguments") 
       unless @_ >= 2 && @_ <= 4;
@@ -931,30 +938,49 @@ you need to specify C<verbose => 0, stderr => /dev/null>.
 sub JobStatus {
     my( $jobid, %opts ) = @_;
     my @cmd = ('baq');
-    my @baq_out;
+    my $cache_key = 'default cache key';
 
     if ( exists $opts{queue} ) {
 	push(@cmd,'-Q',$opts{queue});
+	$cache_key = $opts{queue};
 	delete $opts{queue};
     }
 
-    $opts{stderr} = MNI::Spawn::UNTOUCHED
-      unless exists $opts{stderr};
+    if (!exists $BAQ_cache{$cache_key} ) {
+	$BAQ_cache{$cache_key} = { stamp => 0,
+				   out => [] }
+    }
 
-    my $spawner = new MNI::Spawn( %opts, batch => 0 );
-    $spawner->register_programs(['baq']) or return undef;
-    $spawner->spawn( \@cmd, stdout => \@baq_out );
+    if ( time() > $BAQ_cache{$cache_key}->{stamp} + $BAQ_cache_timeout ) {
+
+	#print "Executing: ", join(' ',@cmd), "\n";
+
+	$opts{stderr} = MNI::Spawn::UNTOUCHED
+	  unless exists $opts{stderr};
+
+	# Without setting verbose and execute explicitly, we
+	# get messages from Spawn:
+	# spawn: fallback variable MNI::Batch::Verbose undefined for ...
+	my $spawner = new MNI::Spawn( verbose => $Options{verbose},
+				      execute => $Options{execute},
+				      %opts, batch => 0 );
+	$spawner->register_programs(['baq']) or return undef;
+	$spawner->spawn( \@cmd, 
+			 stdout => $BAQ_cache{$cache_key}->{out} );
+
+	$BAQ_cache{$cache_key}->{stamp} = time();
+    }
 
     # The baq output contains lines of the form
     #
     #luciana:
     #long: job 1579941: started.
-    #ID        Job                  Owner        Time     State       
-    # 1579941  final.xfm            stever       570      running     
+    #ID        Job                  Owner        Time     State
+    # 1579941  final.xfm            stever       570      running
     #
     #print "Looking for '$jobid'\n";
     local $_;
-    foreach (@baq_out) {
+    foreach (@{$BAQ_cache{$cache_key}->{out}}) {
 	#print "$_\n";
 	if ( /^\s*$jobid\s/ ) {
 	    my @words = split;
