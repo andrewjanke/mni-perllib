@@ -1,0 +1,8 @@
+MNI
+title.tex
+inputs.tex
+mni_perllib.ps
+*.log
+*.aux
+*.toc
+*.dvi

@@ -19,9 +19,8 @@ SOURCE = MNI/Startup.pm\
 	 MNI/MiscUtilities.pm\
 	 MNI/NumericUtilities.pm\
 	 MNI/MincUtilities.pm\
-	 MNI/DataDir.pm\
-	 Getopt/Tabular.pod
-TMPDIRS= MNI Getopt
+	 MNI/DataDir.pm
+TMPDIRS= MNI
 
 POD    = $(SOURCE:.pm=.pod)
 TEX    = $(POD:.pod=.tex)
