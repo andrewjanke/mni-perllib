@@ -8,7 +8,7 @@
 #@REQUIRES   : Exporter
 #@CREATED    : 1997/07/25, Greg Ward (from old Startup.pm, rev. 1.23)
 #@MODIFIED   : 
-#@VERSION    : $Id: Startup.pm,v 1.2 1997-08-21 20:00:49 greg Exp $
+#@VERSION    : $Id: Startup.pm,v 1.3 1997-08-25 01:02:42 greg Exp $
 #@COPYRIGHT  : Copyright (c) 1997 by Gregory P. Ward, McConnell Brain Imaging
 #              Centre, Montreal Neurological Institute, McGill University.
 #
@@ -368,14 +368,21 @@ program shutdown---but only if the program is exiting successfully
 =head1 SIGNAL HANDLING
 
 Finally, F<MNI::Spawn> can install a signal handler for the most
-commonly encountered signals.  This handler simply C<die>s with a
-message describing the signal we were hit by, which then triggers the
-normal shutdown/cleanup procedure (see L<"CLEANUP"> below). The signals
-handled fall into two groups: those you would normally expect to
-encounter (HUP, INT, PIPE and TERM), and those that indicate a serious
-problem with your script or the Perl interpreter running it (ABRT, BUS,
-EMT, FPE, ILL, QUIT, SEGV, SYS and TRAP).  Currently, no distinction is
-made between these two groups of signals.
+commonly encountered signals.  This handler prints a message describing
+the signal we were hit by, cleans up (see L<"CLEANUP"> below),
+uninstalls itself, and then re-sends the same signal to the current
+process (i.e., your program).  The effect of this is that the signal
+will I<not> be caught this time, so your program will terminate
+abnormally just as though F<MNI::Startup>'s signal handler had never
+been there.  The main advantage of this is that whichever program ran
+your program can examine its termination status and determine that it
+was indeed killed by a signal, rather than C<exit>ing normally
+
+The signals handled fall into two groups: those you would normally
+expect to encounter (HUP, INT, PIPE and TERM), and those that indicate a
+serious problem with your script or the Perl interpreter running it
+(ABRT, BUS, EMT, FPE, ILL, QUIT, SEGV, SYS and TRAP).  Currently, no
+distinction is made between these two groups of signals.
 
 The F<sigtrap> module provided with Perl 5.004 provides a more flexible
 approach to signal handling, but doesn't provide a signal handler to
@@ -395,7 +402,7 @@ F<sigtrap> documentation.
 =cut
 
 
-# &startup is where we actually "do some work", i.e.set all the global
+# &startup is where we actually "do some work", i.e. set all the global
 # variables that we exported up in `import'.  It's a separate subroutine
 # (called by import) because it has to be done *after* import is called,
 # and import isn't called until the module has been require'd
@@ -522,7 +529,9 @@ account.)
 
 sub cleanup
 {
-   if ($options{cputimes} && $? == 0)   # only print times on successful exit
+   my ($crash) = @_;
+
+   if ($options{cputimes} && !$crash) # only print times on successful exit
    {
       my (@stop_times, @elapsed, $i, $user, $system);
 
@@ -555,9 +564,16 @@ sub cleanup
    }
 }
 
+
 sub catch_signal
 {
-   die "$ProgramName: $signals{$_[0]}\n";
+   my $sig = shift;
+
+   $SIG{$sig} = 'IGNORE';             # in case of multiple signals under BSD
+   warn "$ProgramName: $signals{$sig}\n";
+   cleanup (1);
+   $SIG{$sig} = 'DEFAULT';            # so we really do commit suicide
+   kill $sig, $$;
 }
 
 END 
@@ -565,7 +581,7 @@ END
 #    warn $?
 #       ? "$ProgramName: exiting with non-zero exit status\n"
 #       : "$ProgramName: exiting normally\n";
-   cleanup;
+   cleanup ($?);
 }
 
 
@@ -599,8 +615,8 @@ avoid clobbering C<@ARGV>.)
 
 This can be enormously useful when trying to recreate the run of a
 program by dissecting its log file; for that reason, it is most commonly
-called only when C<STDOUT> is not a TTY (i.e. when the program's output
-is being logged to a file):
+called only when the program's output is being logged to a file
+(i.e. when C<STDOUT> is not a TTY):
 
    self_announce () unless -t STDOUT;
 
