@@ -9,7 +9,7 @@
 #              static data (eg. model files).
 #@CREATED    : 
 #@MODIFIED   : 
-#@VERSION    : $Id: DataDir.pm.in,v 1.4 1997-09-23 20:27:48 greg Rel $
+#@VERSION    : $Id: DataDir.pm.in,v 1.5 1997-09-29 21:17:14 greg Exp $
 #@COPYRIGHT  : Copyright (c) 1997 by Gregory P. Ward, McConnell Brain Imaging
 #              Centre, Montreal Neurological Institute, McGill University.
 #
@@ -37,6 +37,8 @@ MNI::DataDir - find directory containing static model data for a package
 
    $data_dir = MNI::DataDir::dir ($package_name);
    MNI::DataDir::check_data ($data_dir, \@model_files);
+
+   $install_dir = MNI::DataDir::install_dir ($package_name);
 
 =head1 DESCRIPTION
 
