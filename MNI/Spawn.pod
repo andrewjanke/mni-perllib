@@ -450,13 +450,21 @@ default to true, but again through sleight-of-hand.
 
 =item C<strict> (default: 1)
 
-Three-way flag; if it is C<1> then C<Spawn> will print a warning (using
-C<carp>) when you try to run a program you haven't previously told it
-about with C<RegisterPrograms> (more about this below); if it is C<2>, then
-C<Spawn> will die (using C<croak>) in such a situation.  If it is false,
-C<Spawn> will happily try to execute any program you wish.  Also,
-attempting to add default arguments (with C<AddDefaultArgs>) for unknown
-programs will result in a warning if C<strict> is true.
+Three-way flag; if it is C<1> then C<Spawn> will print a warning when
+you try to run a program you haven't previously told it about (with
+C<RegisterPrograms>---more about this below); if it is C<2>, then
+C<Spawn> will C<die> in such a situation.  If it is C<0> (or indeed any
+false value), C<Spawn> will happily try to execute any program you wish.
+(Note: this will only happen if you have given C<Spawn> permission to go
+poking around your command to fetch the program name, which is
+controlled by the C<complete> option.  In short, if C<complete> is
+false, then C<strict> is ignored: no attempt is made to ensure that you
+have "registered" the program ahead of time, and no "strictness"
+warnings will be printed.)
+
+The C<strict> flag also has another interpretation: when C<AddDefaultArgs>
+is called for an unknown program, a warning will be printed if C<strict> is
+any true value.
 
 =item C<complete> (default: true)
 
