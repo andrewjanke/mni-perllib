@@ -4,6 +4,49 @@ MNI::Spawn - run sub-programs with many bells and whistles
 
 =head1 SYNOPSIS
 
+   use MNI::Spawn;
+
+   # Conventional interface:
+
+   MNI::Spawn::SetOptions (option => value, ...);
+
+   RegisterPrograms ([$prog1, $prog2, ...]) || exit 1;
+   RegisterPrograms ([$prog1, $prog2, ...], $path) || exit 1;
+
+   AddDefaultArgs ($prog, \@args);
+   AddDefaultArgs ($prog, \@args, 'pre');       # 'pre' is default
+   AddDefaultArgs ($prog, \@args, 'post');
+
+   ClearDefaultArgs ($prog);   
+   ClearDefaultArgs ($prog, 'both');            # 'both' is default
+   ClearDefaultArgs ($prog, 'pre');
+   ClearDefaultArgs ($prog, 'post');
+
+   Spawn ($cmd, option => value, ...) && exit 1;
+   Spawn (\@cmd, option => value, ...) && exit 1;
+
+
+   # Object-oriented interface
+
+   $spawner = new MNI::Spawn (option => value, ...);
+   $spawner->set_options (option => value, ...);
+   $alt_spawner = $spawner->copy;
+
+   $spawner->register_programs ([$prog1, $prog2, ...]) || exit 1;
+   $spawner->register_programs ([$prog1, $prog2, ...], $path) || exit 1;
+
+   $spawner->add_default_args ($prog, \@args);
+   $spawner->add_default_args ($prog, \@args, 'pre'); 
+   $spawner->add_default_args ($prog, \@args, 'post');
+
+   $spawner->clear_default_args ($prog); 
+   $spawner->clear_default_args ($prog, 'both')
+   $spawner->clear_default_args ($prog, 'pre');
+   $spawner->clear_default_args ($prog, 'post')
+
+   $spawner->spawn ($cmd, option => value, ...) && exit 1;
+   $spawner->spawn (\@cmd, option => value, ...) && exit 1;
+
 =head1 DESCRIPTION
 
 F<MNI::Spawn> can be seen as a glorified front end to Perl's C<system>
@@ -39,7 +82,7 @@ your help) before any programs are actually run
 =item * maintains a list of default arguments for each "known" program
 that can be inserted into the command line when the program is run
 
-=item * can print detailed summary of command execution (user, host,
+=item * can print a detailed summary of command execution (user, host,
 date, time, and complete command line), to a file of your choice
 (normally your standard output)
 
@@ -72,27 +115,28 @@ add are, in approximate order of how likely I am ever to add them:
 =back
 
 If you find the lack of any of these a problem, be sure to tell
-me---otherwise, I won't add them until I<I> find the lack of them to be a
+me---otherwise, I won't add them until I<I> find their lack to be a
 problem!
 
 =head1 INTERFACES
 
-F<MNI::Spawn> comes with two complete interfaces, one object-oriented (OO)
-and the other a more conventional subroutine-based interface.  The
+F<MNI::Spawn> comes with two complete interfaces, one object-oriented
+(OO) and the other a more conventional subroutine-based interface.  The
 object-oriented interface is more general and flexible, but the
-conventional interface is usually more convenient and will probably be the
-more widely-used interface.  (This convenience arises from its use of some
-hidden global state---you don't have to carry around anything in your code
-to use F<MNI::Spawn>.  With the OO interface, you have to carry around
-"spawning objects" that encapsulate the entire state of the module; with
-the conventional interface, one particular "global" spawning object is
-maintained by the module on your behalf for this purpose.)
+conventional interface is usually more convenient and will probably be
+the more widely-used interface.  (This convenience arises from its use
+of some hidden global state---you don't have to carry around anything in
+your code to use F<MNI::Spawn>.  With the OO interface, you have to
+carry around "spawning objects" that encapsulate the entire state of the
+module; with the conventional interface, one particular "global"
+spawning object is maintained by the module on your behalf for this
+purpose.)
 
-Thus, the conventional interface will be discussed first, and the bulk of
-the documentation and example code will be in terms of it.  Note that all
-of the subroutines in the conventional interface have corresponding methods
-in the OO interface, and the correspondence is fairly obvious: for
-instance, C<RegisterPrograms> (subroutine) corresponds to
+Thus, the conventional interface will be discussed first, and the bulk
+of the documentation and example code will be in terms of it.  Note that
+all of the subroutines in the conventional interface have corresponding
+methods in the OO interface, and the correspondence is fairly obvious:
+for instance, C<RegisterPrograms> (subroutine) corresponds to
 C<register_programs> (method).  It's trivial to translate back and forth
 between the two interfaces; for instance, this code (in the conventional
 interface):
@@ -111,24 +155,25 @@ would, in OO terms, be:
    $spawner->spawn (['mincresample', $invol, $outvol, @options]);
 
 where, of course, the spawning object C<$spawn> only has to be created
-once.
+once in the course of your program's execution.
 
 An important part of F<MNI::Spawn>'s interface is the set of I<options>
 which control almost every aspect of the module's operation, and make up
 the bulk of the state that is carried around in F<MNI::Spawn> objects
 (variously called I<spawners> or, for the darkly whimsical, I<spawning
-vats>).  One neat thing about these options is that they can be set
-either semi-permanently with the C<SetOptions> subroutine (or
-C<set_options> method), or on a temporary, per-execution basis.  This is
-convenient because some options (like C<verbose> or C<execute>) will
-most likely be set once, near the beginning of your program, and
-forgotten about; others (like C<stdout> and C<stderr>, which control
-output redirection and capturing) will---if they are used at
-all---usually be different with every command you execute.  The module
-is designed so that doing things the "normal" way is easy and
-convenient, but deviating a little bit (e.g. always capturing standard
-error to the same variable, or changing C<verbose> frequently), is just
-as easy.  The module options are fully documented in L<"OPTIONS"> below.
+vats>).  One neat thing about these options is that they can be set either
+semi-permanently with the C<SetOptions> subroutine (or C<set_options>
+method), or on a temporary, per-execution basis.  This is convenient
+because some options (like C<verbose> or C<execute>) will most likely be
+set once, near the beginning of your program, and forgotten about; others
+(like C<stdout> and C<stderr>, which control output redirection and
+capturing) will---if they are used at all---usually be different with every
+command you execute.  The module is designed so that doing things the
+"normal" way is easy and convenient, but deviating a little bit
+(e.g. always capturing standard error to the same variable, or changing
+C<verbose> frequently), is just as easy, and just requires a little more
+typing on your part.  The module options are fully documented in
+L<"OPTIONS"> below.
 
 =head1 OPERATION
 
@@ -138,7 +183,7 @@ interface is implemented on top of the OO interface).  Generally
 speaking, every program you write using F<MNI::Spawn> will call the
 C<Spawn> subroutine (or C<spawn> method) several times, and most
 programs will make some use of C<SetOptions>, C<RegisterPrograms>, and
-C<AddDefaultArgs>.  
+C<AddDefaultArgs>.
 
 C<Spawn> is the call that actually executes a program; the others merely
 change the state of the module to customize how programs are executed.
@@ -157,9 +202,10 @@ in the following sections:
 
 =item * command completion
 
-This consists of turning a simple program name into a full path (unless the
-program name you supply already includes a directory component), and adding
-any default arguments for that program.  Each of these steps is optional.
+This consists of turning a simple program name into a full path (unless
+the program name you supply already includes a directory component), and
+adding any default arguments for that program.  Each of these steps is
+optional.
 
 =item * plan redirection
 
@@ -174,18 +220,18 @@ Not yet implemented.
 
 =item * fork
 
-=item * in child: redirect and C<exec>
+=item * in child process: redirect and C<exec>
 
 Either or both (or neither) of C<STDOUT> and C<STDERR> are redirected
 (possibly to a pipe that is being read by the parent, for capturing
 standard output), and the command to execute is C<exec>'d.
 
-=item * in parent: harvest child and wait
+=item * in parent process: harvest child and wait
 
 If we are to capture the child's standard output and/or standard error,
 we read them in here.  Then, we wait for the child process to terminate.
 
-=item * in parent: react to child's termination status
+=item * in parent process: react to child's termination status
 
 If the child program crashed (terminated with non-zero status), we react
 in some user-customizable way.
@@ -236,9 +282,9 @@ your output through a pipeline before getting your hands on it:
 
    Spawn ('ls *.t | grep -v "^a"');
 
-(Note that quotes are rearing their ugly head here, something that
-should set alarm bells ringing in your head.  If it doesn't, you
-probably haven't done enough shell programming---lucky you!)
+(Note that quotes are already rearing their ugly head here, something that
+should set alarm bells ringing in your head.  If it doesn't, you probably
+haven't done enough shell programming---lucky you!)
 
 Or, you might want to run two commands in sequence, say to change
 directories or impose some system limit temporarily:
@@ -282,7 +328,7 @@ semi-permanently by calling C<SetOptions>, or overridden on a temporary,
 per-C<Spawn> basis by adding optional arguments to the C<Spawn> call.
 ("Semi-permanent" just means that any options set with C<SetOptions>
 will stay the same until the next C<SetOptions> call that updates that
-option, or temporarily overridden for one C<Spawn> call.)
+option, or until temporarily overridden for one C<Spawn> call.)
 
 In the object-oriented interface, every spawning object carries around
 its own set of options.  Thus, it's easy to have one "spawner" that runs
@@ -330,10 +376,10 @@ follows:
 =item C<verbose> (default: undefined)
 
 Boolean; if true C<Spawn> will print a line summarizing each command and
-its execution environment.  This includes the name of the running
-program (taken from C<$main::ProgramName>, usually supplied by the
-F<MNI::Startup> module); the user running the program, the host on which
-it is run, and the directory from which it is run (supplied by
+its execution environment just before executing it.  This includes the
+name of your program (taken from C<$main::ProgramName>, usually supplied
+by the F<MNI::Startup> module); the user running the program, the host
+on which it is run, and the directory from which it is run (supplied by
 C<MNI::MiscUtilities::userstamp>); the date and time of execution (from
 C<MNI::MiscUtilities::timestamp>); and the full path of the program
 being run with all arguments.  The purpose of this summary line is to
@@ -355,23 +401,22 @@ Trust me, though---at some point, trying to trace the complicated
 history of some data in the absence of other information, you'll be glad
 to have it.)
 
-A useful peculiarity of C<verbose> (and its close companion C<execute>) is
-that if it is undefined, it will take its value from the C<$Verbose> global
-in the calling package.  This ties in neatly with the global variable
-C<$Verbose> exported (presumably into package C<main>) by F<MNI::Startup>;
-the fact that copying C<$main::Verbose> to F<MNI::Spawn>'s C<verbose>
-option happens quite late (usually on the first call to C<Spawn>) means
-that you can change C<$Verbose> in your main program---say, by tying it to
-a command-line option---anywhere up to the first C<Spawn> call, and it will
-still affect C<Spawn>'s behaviour.  This---along with the similar situation
-for the C<execute> option---is the only time C<Spawn> will change one of
-its options behind your back (i.e. without you calling C<SetOptions>).
-C<verbose> is undefined by default, so this feature will be used in almost
-every program you write with F<MNI::Spawn>.  Note that since the
-F<MNI::Startup> module sets its C<$Verbose> to true, the C<verbose> option
-(assuming you use F<MNI::Startup> and F<MNI::Spawn> in concert) effectively
-defaults to true.  However, you should keep in mind that this happens
-through a little sleight-of-hand rather than in the obvious way.
+A useful peculiarity of C<verbose> (and its close companion C<execute>)
+is that if it is undefined, it will take its value from the C<$Verbose>
+global in the calling package.  This ties in neatly with the global
+variable C<$Verbose> exported (presumably into package C<main>) by
+F<MNI::Startup>; the fact that copying C<$main::Verbose> to
+F<MNI::Spawn>'s C<verbose> option happens quite late (on every call to
+C<Spawn>, as long as C<verbose> remains undefined in the spawning
+object) means that you can change C<$Verbose> anywhere in your main
+program---say, by tying it to a command-line option---and have it
+continue to affect C<Spawn>'s behaviour.  C<verbose> is undefined by
+default, so this feature will be used in almost every program you write
+with F<MNI::Spawn>.  Note that since the F<MNI::Startup> module sets its
+C<$Verbose> to true, the C<verbose> option (assuming you use
+F<MNI::Startup> and F<MNI::Spawn> in concert) effectively defaults to
+true.  However, you should keep in mind that this happens through a
+little sleight-of-hand rather than in the obvious way.
 
 Also, the above explanation assumes that C<Spawn> is being called from
 the same package where you C<use MNI::Startup>---usually, C<main>.  If
@@ -384,12 +429,12 @@ following incantation:
    *Verbose = \$MNI::Startup::Verbose;
    *Execute = \$MNI::Startup::Execute;
 
-(see pp. 51-52 of the I<Programming Perl, 2nd ed.> for more
-information).  Then, when C<Spawn> goes poking into your module for the
-value of its C<$Verbose> global, it will actually fetch the C<$Verbose>
-global from F<MNI::Startup>---which, due to F<MNI::Startup> presumably
-exporting C<$Verbose> to C<main>, will also be the value of C<$Verbose>
-in your main program.
+(see pp. 51-52 of I<Programming Perl, 2nd ed.> for more information).
+Then, when C<Spawn> goes poking into your module for the value of its
+C<$Verbose> global, it will actually fetch the C<$Verbose> global from
+F<MNI::Startup>---which, due to F<MNI::Startup> presumably exporting
+C<$Verbose> to C<main>, will also be the value of C<$Verbose> in your
+main program.
 
 =item C<execute> (default: undefined)
 
@@ -398,10 +443,10 @@ Boolean; if false C<Spawn> will do everything up to (and including) the
 fork/redirect/exec/gather/wait/react stuff, though.
 
 C<execute> shares C<verbose>'s peculiar trait of taking its value from
-C<$main::Execute> when it is undefined, which is also the default case
-for C<execute>.  And since F<MNI::Startup> also sets C<$main::Execute>
-to true, C<execute> also will usually (effectively) default to true, but
-again through sleight-of-hand.
+C<$Execute> in the calling package when it is undefined, which is also
+the default value for C<execute>.  And since F<MNI::Startup> also sets
+C<$main::Execute> to true, C<execute> also will usually (effectively)
+default to true, but again through sleight-of-hand.
 
 =item C<strict> (default: 1)
 
@@ -422,18 +467,18 @@ controlled with the C<search> and C<add_defaults> options.)
 
 =item C<search> (default: true)
 
-Boolean; if true, then C<Spawn> might search a list of directories (see the
-C<search_path> option below) to determine the location of the program it's
-about to execute.  This won't happen if C<Spawn> already has an idea of the
-program's location, either through a previous call to C<RegisterPrograms>
-(which is how you tell C<Spawn> in advance what programs you expect to be
-running) or if you supply a program name with directory components (either
-absolute or relative).  Note that since searching is a sub-task of
-completion, C<complete> must be true for C<search> to have any effect.
-Also, don't assume that just because C<Spawn> doesn't search a list of
-directories for your program, nobody will---Perl's C<exec> calls either the
-shell or C<execvp(3)>, which means the PATH environment variable will be
-searched.
+Boolean; if true, then C<Spawn> might search a list of directories (see
+the C<search_path> option below) to determine the location of the
+program it's about to execute.  This won't happen if C<Spawn> already
+has an idea of the program's location, either through a previous call to
+C<RegisterPrograms> (which is how you tell C<Spawn> in advance what
+programs you expect to be running) or if you supply a program name with
+directory components (either absolute or relative).  Note that since
+searching is a sub-task of completion, C<complete> must be true for
+C<search> to have any effect.  Also, don't assume that just because
+C<Spawn> doesn't search a list of directories for your program, nobody
+will---Perl's C<exec> calls either the shell or C<execvp(3)>, which
+means the PATH environment variable will ultimately be searched.
 
 =item C<add_defaults> (default: true)
 
@@ -445,8 +490,8 @@ C<search>, C<complete> must be true for C<add_defaults> to have any effect.
 
 String or list ref; supplies the list of directories to search when
 searching for programs.  This is passed directly to
-C<MNI::FileUtilities::register_programs>, so the same rules apply as to the
-PATH parameter to that subroutine: C<search_path> may be a string
+C<MNI::FileUtilities::find_programs>, so the same rules apply as to the
+C<$path> parameter to that subroutine: C<search_path> may be a string
 containing a colon-separated list of directories or a reference to a
 list of directories; or it can be undefined, in which case
 C<$ENV{'PATH'}> is used.
@@ -507,7 +552,7 @@ stdout.  Again, see L<"REDIRECTION AND CAPTURING"> for full details.
 =head1 COMMAND COMPLETION
 
 Before doing anything else with your command, C<Spawn> attempts to fill
-in a few details about it.  The consists of converting a bare program
+in a few details about it.  This consists of converting a bare program
 name to a full path and adding default arguments.  Command completion
 can be completely disabled by setting the C<complete> option to false.
 
@@ -556,7 +601,7 @@ program if the supplied program name contains no slashes.  The
 advantages of letting C<Spawn> do the search are that the program's full
 path appears in the command log, and that you can search a custom path
 (different from the PATH environment variable).  If you explicitly want
-to run a progam in the current directory, just preface the program name
+to run a program in the current directory, just preface the program name
 with C<'./'>---that way, no searching will be done.
 
 Note that one consequence of the search algorithm used by C<Spawn> (and
@@ -575,8 +620,8 @@ for arguments to be inserted at the beginning of the command ("pre"
 arguments), and another for arguments to be tacked on at the end ("post"
 arguments).  Since this feature is most often used for specifying
 program options, and since most Unix programs like their options to come
-first on the command line, F<MNI::Spawn> tends to assume that you mean
-"pre" arguments if you don't explicitly say otherwise.
+first on the command line, F<MNI::Spawn> assumes that you mean "pre"
+arguments if you don't explicitly say otherwise.
 
 You can set the list of default arguments for a particular command with
 C<AddDefaultArgs>; for example,
@@ -635,7 +680,7 @@ If C<stdout> or C<stderr> is a reference to a scalar or array variable,
 the corresponding stream will be "captured" by C<Spawn> and put into the
 referenced variable.  Capturing to a scalar will result in all of the
 child's output lines being concatenated with newlines preserved;
-capturing to an array means the one output line will go to each element
+capturing to an array means that one output line will go to each element
 of the array with newlines removed.
 
 =head2 Special handling of stderr
@@ -682,7 +727,7 @@ unwise in any case, because of the danger that the end user will never
 see some error messages at all---almost always a situation to be
 avoided.  It's usually best just to leave the child's stderr alone (or
 let C<Spawn> merge it into a stdout log file), to maximize the end
-user's chance of ever seeing his error messages.
+user's chance of seeing his error messages.
 
 =head1 ERROR HANDLING
 
@@ -727,11 +772,11 @@ C<err_action> option.  Currently the following values are supported:
 
 =over 4
 
-=item C<'fatal'>
+=item C<'fatal'> (default)
 
-C<Spawn> will C<die> (with a useful error message giving the sub-program
-that crashed, its termination status, and the name of your program)
-whenever a child program crashes.  This is the default.
+C<Spawn> will C<die> (with a useful error message giving the name of
+your program, the sub-program that crashed, and its termination status)
+whenever a child program crashes.
 
 =item C<'notify'>
 
@@ -809,7 +854,7 @@ of it for us.
 C<RegisterPrograms> can be called any number of times in your program---it
 always adds to the existing list of "known programs."
 
-See also C<register_programs>, C<find_program>, and C<search_directories> in
+See also C<find_programs>, C<find_program>, and C<search_directories> in
 L<MNI::FileUtilities>.
 
 =item AddDefaultArgs (PROGRAMS, ARGS [, WHERE])
@@ -840,7 +885,7 @@ programs.  Like with C<AddDefaultArgs>, PROGRAMS may be a single program
 (a string) or a reference to a list of programs.  WHERE, if given, may
 be C<'pre'>, C<'post'>, or C<'both'>---it tells whether to delete the
 list of "pre" arguments, "post" arguments, or both lists.  It defaults
-to C<'where'>.
+to C<both>.
 
 =item Spawn (COMMAND [, OPTION, VALUE, ...])
 
