@@ -1,3 +1,14 @@
+1999-12-02  Chris Cocosco  <crisco@bic.mni.mcgill.ca>
+
+	* MNI/Batch.pm: new option: 'batch_reports'
+	("should the underlying batch process run in verbose mode?")
+	Unless the user explicitly sets it, this option defaults to
+	whatever value 'verbose' has.
+
+	[*Caveat*] the text produced by the underlying process goes to
+	STDOUT even if the 'verbose' text (which is produced by Batch.pm)
+	is redirected somewhere else by means of the 'loghandle' option
+
 1999-11-30  Chris COCOSCO  <crisco@thaisa.bic.mni.mcgill.ca>
 
 	* MNI/FileUtilities.pm (check_files): documentation fixes.
