@@ -8,7 +8,7 @@
 #@REQUIRES   : Exporter
 #@CREATED    : 1997/07/25, Greg Ward (from old Startup.pm, rev. 1.23)
 #@MODIFIED   : 
-#@VERSION    : $Id: Startup.pm,v 1.6 1997-09-11 19:05:16 greg Exp $
+#@VERSION    : $Id: Startup.pm,v 1.7 1997-09-18 18:49:11 greg Rel $
 #@COPYRIGHT  : Copyright (c) 1997 by Gregory P. Ward, McConnell Brain Imaging
 #              Centre, Montreal Neurological Institute, McGill University.
 #
@@ -152,29 +152,32 @@ my %options =
 
 my @start_times;
 
-# %signals is used to generate the error message that we print on
-# being hit by one of these signals; it also determines what signals
-# we will catch
-
-# XXX I have commented some of these out because "perl -w" warns "no
-# such signal" about them with Perl 5.004 under IRIX 5.3 -- WHY??!!?
-# these are listed with "kill -l", and in <sys/signal.h>
+# %signals is used to generate the error message that we print on being
+# hit by one of these signals; it also determines what signals we can
+# catch.  The list is culled by checking that each signal already has a
+# value in %SIG -- this tells us that a signal is "known" to Perl,
+# i.e. won't trigger a warning when we try to install a handler for it.
+# (We could perhaps cull further by requiring that that value be defined
+# -- then we wouldn't override existing or built-in signal handlers such
+# as for SEGV.  I think it's probably OK to override them, though.)
 
 my %signals =
    (HUP  => 'hung-up', 
     INT  => 'interrupted', 
     QUIT => 'quit',
     ILL  => 'illegal instruction',
-#   TRAP => 'trace trap',
-    ABRT => 'aborted',                  # not in Linux
-#   IOT  => 'I/O trap',                 # but this is instead
-#   EMT  => 'EMT instruction',
+    TRAP => 'trace trap',
+    ABRT => 'aborted',
+    IOT  => 'I/O trap',
+    EMT  => 'EMT instruction',
     FPE  => 'floating-point exception',
-#   BUS  => 'bus error',
+    BUS  => 'bus error',
     SEGV => 'segmentation violation',
     SYS  => 'bad argument to system call',
     PIPE => 'broken pipe',
-    TERM => 'terminated');
+    TERM => 'terminated',
+    USR1 => 'user-defined signal 1',
+    USR2 => 'user-defined signal 2');
 
 
 # Here we process the import list.  We walk over the entire list once,
@@ -380,11 +383,14 @@ been there.  The main advantage of this is that whichever program ran
 your program can examine its termination status and determine that it
 was indeed killed by a signal, rather than C<exit>ing normally
 
-The signals handled fall into two groups: those you would normally
-expect to encounter (HUP, INT, PIPE and TERM), and those that indicate a
-serious problem with your script or the Perl interpreter running it
-(ABRT, BUS, EMT, FPE, ILL, QUIT, SEGV, SYS and TRAP).  Currently, no
-distinction is made between these two groups of signals.
+The signals handled fall into three groups: those you might normally
+expect to encounter (HUP, INT, QUIT, PIPE and TERM); those that indicate
+a serious problem with your script or the Perl interpreter running it
+(ILL, TRAP, ABRT, IOT, BUS, EMT, FPE, SEGV, and SYS); and user-defined
+signals (USR1 and USR2).  Note that not all of these signals are valid
+on a given platform, so F<MNI::Startup> only installs handlers for the
+subset of these signals that Perl knows about.  Currently, no
+distinction is made between the groups of signals.
 
 The F<sigtrap> module provided with Perl 5.004 provides a more flexible
 approach to signal handling, but doesn't provide a signal handler to
@@ -395,11 +401,11 @@ Be sure that you also include C<nosig> in F<MNI::Startup>'s import list,
 to disable its signal handling.  (The version of F<sigtrap> distributed
 with Perl 5.003 and earlier isn't nearly as flexible, so there's not
 much point using F<sigtrap> instead of F<MNI::Startup>'s signal handling
-if you're not running Perl 5.004 or later.)
+unless you're running Perl 5.004 or later.)
 
 To give credit where it is due, the list of signals handled and some of
-the language used to describe them were stolen straight from the
-F<sigtrap> documentation.
+the language used to describe them are based on the F<sigtrap>
+documentation from the Perl 5.004 distribution.
 
 =cut
 
@@ -477,7 +483,7 @@ sub startup
    if ($options{sig})
    {
       my $sig;
-      foreach $sig (keys %signals)
+      foreach $sig (grep (exists $SIG{$_}, keys %signals))
       {
          $SIG{$sig} = \&catch_signal;
       }
