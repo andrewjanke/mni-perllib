@@ -129,7 +129,7 @@ sub _volume {
 	$index = $label;
 	if (defined($new_value)) {
 	} elsif ( $index < 0 or $index >= $self->numberOfTags() ) {
-	    carp "tag index out of range: $index \n";
+	    carp "tag index '$index' out of range";
 	    return;
 	}
     } else {
@@ -138,7 +138,7 @@ sub _volume {
 	    $index = scalar(@{$self->{$v}});
 	    $self->{"_label_$label"} = $index;
 	} elsif ( !defined($index) ) {
-	    carp "tag label not defined: $label\n";
+	    carp "tag label '$label' not defined";
 	    return;
 	}
     }
