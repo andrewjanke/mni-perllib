@@ -1,3 +1,8 @@
+Sun Aug  8 17:11:58 1999  Steve Robbins  <steve@nyongwa.montreal.qc.ca>
+
+	* MNI/Batch.pm (create_sync_file): take care when job_name is not
+ 	defined.
+
 Sat Aug  7 16:58:16 1999  Steve Robbins  <steve@nyongwa.montreal.qc.ca>
 
 	* MNI/Batch.pm: all package variables, other than @ISA,

@@ -366,6 +366,8 @@ sub create_sync_file
 
    # FIXME: watch out for illegal characters in $job_name, etc.
    #
+   $job_name = '' unless defined($job_name);
+
    my $file = sprintf ("%s/%s_%s-%d.%s", 
 		       $dir, $job_name, $host, $job_pid, $condition);
    print BATCH <<END;
