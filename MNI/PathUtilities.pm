@@ -11,13 +11,14 @@
 #              replace_dir
 #              replace_ext
 #              merge_paths
+#              expand_path
 #@EXPORT_TAGS: all
 #@USES       : 
 #@REQUIRES   : Exporter
 #              AutoLoader
 #@CREATED    : 1997/05/13, Greg Ward (from path_utilities.pl, revision 1.10)
 #@MODIFIED   : 
-#@VERSION    : $Id: PathUtilities.pm,v 1.3 1997-07-10 13:20:14 greg Exp $
+#@VERSION    : $Id: PathUtilities.pm,v 1.4 1997-07-29 20:20:56 greg Exp $
 #@COPYRIGHT  : Copyright (c) 1997 by Gregory P. Ward, McConnell Brain Imaging
 #              Centre, Montreal Neurological Institute, McGill University.
 #
@@ -46,7 +47,8 @@ require AutoLoader;
                 split_path
                 replace_dir 
                 replace_ext
-                merge_paths);
+                merge_paths
+                expand_path);
 %EXPORT_TAGS = (all => [@EXPORT_OK]);
 
 *AUTOLOAD = \&AutoLoader::AUTOLOAD;
@@ -79,6 +81,8 @@ MNI::PathUtilities - recognize, parse, and tweak POSIX file and path names
 
    @dirs = merge_paths (@dirs);
 
+   $path = expand_path ($path) || exit 1;
+
 =head1 DESCRIPTION
 
 C<MNI::PathUtilities> provides a collection of subroutines for doing
@@ -102,11 +106,10 @@ sticking in slashes.
 
 Error handling is not a worry in this module; the criterion for a
 subroutine going in C<MNI::PathUtilities> (as opposed to
-C<MNI::FileUtilities>) is that it not interact with the filesystem in any
-way, so the only possible source of errors is if you pass in strings that
-are wildly different from what is expected of Unix/POSIX filenames.  Since
-Unix filenames can be pretty much anything until you actually plant them in
-a real filesystem, this is not detected.
+C<MNI::FileUtilities>) is that it not explicitly interact with the
+filesystem, so there aren't many opportunities for errors to occur.  (But
+see C<expand_path> for one routine that does have to worry about error
+handling.)
 
 =head1 EXPORTS
 
@@ -457,6 +460,91 @@ sub merge_paths
    }
    @path;
 }
+
+
+=item expand_path (PATH)
+
+Expands user home directories (using the ~ notation) and environment
+variables (using the $ notation) in a path.  
+
+Home directories are expanded as follows: if PATH starts with a tilde (~),
+the text from the tilde to the first slash or end of string (if no slashes)
+is taken to be a username.  If this username is empty (ie. PATH is just
+C<'~'> or starts with C<'~/'>), then the tilde is replaced by the current
+user's home directory (from C<$ENV{'HOME'}>).  Otherwise, the username is
+looked up in the password file to find that user's home directory, which
+then replaces the leading C<'~username'> in PATH.  If the username is
+unknown, C<expand_path> prints a warning and returns false.
+
+Environment variables are expanded as follows: any $ seen in PATH
+followed by a string of one or more letters, digits, and underscores is
+replaced by the environment variable named by that string.  If no such
+variable is found, C<expand_path> prints a warning and returns false.
+
+Note that the first call to C<expand_path> that expands a home directory
+other than that of the current user will involve a slight delay as the
+entire password file is read in.  This information is cached for future
+invocations, though.
+
+=cut
+
+my $dir_cache;
+
+# ------------------------------ MNI Header ----------------------------------
+#@NAME       : &expand_path
+#@INPUT      : $path
+#@OUTPUT     : 
+#@RETURNS    : $path, with ~name and $var expanded
+#@DESCRIPTION: Expands usernames and environment variables in a path.
+#@CREATED    : 1997/07/29, GPW
+#@MODIFIED   : 
+#-----------------------------------------------------------------------------
+sub expand_path
+{
+   my ($path) = @_;
+   my ($homedir, $username);
+
+   if ($path =~ s|^~([^/]*)||)          # starts with a twiddle
+   {
+      $username = $1;
+      if ($username eq '')              # empty string -- current user
+      {
+         $path = $ENV{'HOME'} . $path;
+      }
+      else                              # some other user
+      {
+         unless (defined $dir_cache)
+         {
+            my (@pwent);
+            $dir_cache->{$pwent[0]} = $pwent[7]
+               while (@pwent = getpwent);
+            endpwent;
+         }
+
+         unless (exists $dir_cache->{$username})
+         {
+            warn "unknown username \"$username\"\n";
+            return 0;
+         }
+
+         $path = $dir_cache->{$username} . $path;
+      }
+   }
+
+   # and now expand any environment variables in $path
+
+   while ($path =~ s|\$(\w+)|$ENV{$1}|e)
+   {
+      unless (exists $ENV{$1})
+      {
+         warn "unknown environment variable \"$1\"\n";
+         return 0;
+      }
+   }
+
+   return $path;
+
+}  # expand_path
 
 =back
 
