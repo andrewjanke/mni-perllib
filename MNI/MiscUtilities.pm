@@ -14,7 +14,7 @@
 #@REQUIRES   : Exporter
 #@CREATED    : 1997/04/24, Greg Ward (from misc_utilities.pl)
 #@MODIFIED   : 
-#@VERSION    : $Id: MiscUtilities.pm,v 1.5 1997-10-02 19:23:57 greg Exp $
+#@VERSION    : $Id: MiscUtilities.pm,v 1.6 1997-10-03 13:26:59 greg Exp $
 #@COPYRIGHT  : Copyright (c) 1997 by Gregory P. Ward, McConnell Brain Imaging
 #              Centre, Montreal Neurological Institute, McGill University.
 #
@@ -69,7 +69,7 @@ MNI::MiscUtilities - miscellaneous and unclassifiable utility routines
 
 =head1 DESCRIPTION
 
-C<MNI::MiscUtilities> provides a handful of otherwise unclassifiable
+F<MNI::MiscUtilities> provides a handful of otherwise unclassifiable
 utility routines.  Don't go looking for a common thread of purpose or
 operation---there isn't one!
 
@@ -334,7 +334,7 @@ sub make_banner
 
 =item shellquote (WORDLIST)
 
-Performs the opposite of the C<Text::ParseWords> module, namely it joins
+Performs the opposite of the F<Text::ParseWords> module, namely it joins
 an array of words together, with some sub-strings quoted in order to
 escape shell meta-characters.  WORDLIST should just be a list of
 substrings, not a list reference.  This is useful for turning a list of

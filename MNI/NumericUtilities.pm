@@ -12,7 +12,7 @@
 #@REQUIRES   : Exporter
 #@CREATED    : 1997/06/06, Greg Ward (from numeric_utilities.pl, revision 1.9)
 #@MODIFIED   : 
-#@VERSION    : $Id: NumericUtilities.pm,v 1.1 1997-07-10 13:22:29 greg Rel $
+#@VERSION    : $Id: NumericUtilities.pm,v 1.2 1997-10-03 13:28:32 greg Exp $
 #@COPYRIGHT  : Copyright (c) 1997 by Gregory P. Ward, McConnell Brain Imaging
 #              Centre, Montreal Neurological Institute, McGill University.
 #
@@ -56,7 +56,7 @@ MNI::NumericUtilities - common trivial numeric operations
 
 =head1 DESCRIPTION
 
-C<MNI::NumericUtilities> provides a handful of common trivial numeric
+F<MNI::NumericUtilities> provides a handful of common trivial numeric
 operations.  About the only thing these routines have in common is 
 a tendency to assume that all scalars are floating-point numbers.
 

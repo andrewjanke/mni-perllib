@@ -17,7 +17,7 @@
 #@REQUIRES   : Exporter
 #@CREATED    : 1997/04/25, Greg Ward (from file_utilities.pl, revision 1.16)
 #@MODIFIED   : 
-#@VERSION    : $Id: FileUtilities.pm,v 1.10 1997-10-02 19:22:02 greg Exp $
+#@VERSION    : $Id: FileUtilities.pm,v 1.11 1997-10-03 13:25:04 greg Exp $
 #@COPYRIGHT  : Copyright (c) 1997 by Gregory P. Ward, McConnell Brain Imaging
 #              Centre, Montreal Neurological Institute, McGill University.
 #
@@ -100,7 +100,7 @@ MNI::FileUtilities - manipulate/check/validate/search files and directories
 
 =head1 DESCRIPTION
 
-C<MNI::FileUtilities> provides a loosely-related collection of utility
+F<MNI::FileUtilities> provides a loosely-related collection of utility
 subroutines for performing various common operations that help maximize
 your program's likelihood of running successfully and provide thorough
 diagnostics when things go wrong.  The module is rife with assumptions that
@@ -131,7 +131,7 @@ C<generate_numbered_filename>, C<statfs>.
 
 =head1 EXPORTS
 
-By default, C<MNI::FileUtilities> exports no symbols.  You can import in
+By default, F<MNI::FileUtilities> exports no symbols.  You can import in
 the usual one-name-at-a-time way like this:
 
    use MNI::FileUtilities qw(check_output_dirs test_file);
@@ -170,8 +170,8 @@ Finally, an C<all> tag is provided to import all exportable symbols.
 Error handling is fairly consistent: in general, the routines here print a
 warning and return false when they discover an error.  The guiding
 principle is to tell the user as much as he/she needs to know; all you (the
-programmer using C<MNI::FileUtilities>) have to do is know when to pay
-attention to the return values from C<MNI::FileUtilities> routines, and
+programmer using F<MNI::FileUtilities>) have to do is know when to pay
+attention to the return values from F<MNI::FileUtilities> routines, and
 what to do when they fail.  In most cases, you should pay attention to the
 return value; usually, you will want to bomb (e.g. C<exit 1>) as soon as an
 error is reported.  I've deliberately left this choice up to you (rather
@@ -183,7 +183,7 @@ have it printed to C<STDERR>, you can set C<$SIG{'__WARN__'}>.  See
 L<perlvar> for more information.
 
 There are a few routines that will C<die> on failure.  Generally, if you
-mess up by supplying bad arguments, the C<MNI::FileUtilities> routines will
+mess up by supplying bad arguments, the F<MNI::FileUtilities> routines will
 C<die> or C<croak>.  If blundering on in the face of error would cause
 serious problems for future invocations of a routine, it will C<die>
 (C<generate_numbered filename> is the only one that falls in this
@@ -978,7 +978,7 @@ C<RegisterPrograms> subroutine in F<MNI::Spawn> that maintains a private
 hash of all "known" programs and their full paths, so you never have to
 worry about keeping track of both program names and their full paths.
 Unsurprisingly, C<MNI::FileUtilities::find_programs> is called by
-C<MNI::Spawn::RegisterPrograms>.  See the F<MNI::Spawn> documentation for
+C<MNI::Spawn::RegisterPrograms>.  See the L<MNI::Spawn> for
 more details.)
 
 =cut

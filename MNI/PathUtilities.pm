@@ -18,7 +18,7 @@
 #              AutoLoader
 #@CREATED    : 1997/05/13, Greg Ward (from path_utilities.pl, revision 1.10)
 #@MODIFIED   : 
-#@VERSION    : $Id: PathUtilities.pm,v 1.9 1997-10-02 19:23:01 greg Exp $
+#@VERSION    : $Id: PathUtilities.pm,v 1.10 1997-10-03 13:25:57 greg Rel $
 #@COPYRIGHT  : Copyright (c) 1997 by Gregory P. Ward, McConnell Brain Imaging
 #              Centre, Montreal Neurological Institute, McGill University.
 #
@@ -78,7 +78,7 @@ MNI::PathUtilities - recognize, parse, and tweak POSIX file and path names
 
 =head1 DESCRIPTION
 
-C<MNI::PathUtilities> provides a collection of subroutines for doing
+F<MNI::PathUtilities> provides a collection of subroutines for doing
 common string transformations and matches on Unix/POSIX filenames.  I
 use "filenames" here in the generic sense of either a directory name, a
 bare filename, or a complete path to a file.  It should be clear from
@@ -91,22 +91,22 @@ a slash or are empty.  (The exception is C<merge_paths>, which returns a
 list of directories ready to be C<join>'d and stuffed into something
 like C<$ENV{'PATH'}>---for this, you want '.' for the current
 directory, and no trailing slashes.)  You generally don't have to worry
-about doing this for the benefit of the C<MNI::PathUtilities>
+about doing this for the benefit of the F<MNI::PathUtilities>
 subroutines; they use C<normalize_dirs> to take care of it for you.
 However, you might want to use C<normalize_dirs> in your own code to
 spare yourself the trouble of converting empty strings to '.' and
 sticking in slashes.
 
 Error handling is not a worry in this module; the criterion for a
-subroutine going in C<MNI::PathUtilities> (as opposed to
-C<MNI::FileUtilities>) is that it not explicitly interact with the
+subroutine going in F<MNI::PathUtilities> (as opposed to
+F<MNI::FileUtilities>) is that it not explicitly interact with the
 filesystem, so there aren't many opportunities for errors to occur.  (But
 see C<expand_path> for one routine that does have to worry about error
 handling.)
 
 =head1 EXPORTS
 
-By default, C<MNI::PathUtilities> exports no symbols.  You can import in
+By default, F<MNI::PathUtilities> exports no symbols.  You can import in
 the usual one-name-at-a-time way like this:
 
    use MNI::PathUtilities qw(normalize_dirs split_path);

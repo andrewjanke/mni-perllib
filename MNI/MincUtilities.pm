@@ -8,11 +8,11 @@
 #              volume_params get_dimension_order
 #              compute_resample_args compute_reshape_args
 #@EXPORT_TAGS: range, threshold, history, geometry, args, all
-#@USES       : MNI;:Spawn, MNI::NumericUtilities, MNI::MiscUtilities
+#@USES       : MNI::Spawn, MNI::NumericUtilities, MNI::MiscUtilities
 #@REQUIRES   : Exporter
 #@CREATED    : 1997/08/07, Greg Ward (from minc_utilities.pl, revision 1.16)
 #@MODIFIED   : 
-#@VERSION    : $Id: MincUtilities.pm,v 1.6 1997-10-02 19:24:19 greg Exp $
+#@VERSION    : $Id: MincUtilities.pm,v 1.7 1997-10-03 13:28:06 greg Exp $
 #@COPYRIGHT  : Copyright (c) 1997 by Gregory P. Ward, McConnell Brain Imaging
 #              Centre, Montreal Neurological Institute, McGill University.
 #
@@ -159,7 +159,7 @@ C<compute_reshape_args>).
 
 =head1 EXPORTS
 
-By default, C<MNI::MincUtilities> exports no symbols.  You can import in
+By default, F<MNI::MincUtilities> exports no symbols.  You can import in
 the usual one-name-at-a-time way like this:
 
    use MNI::MincUtilities qw(volume_min volume_params);
