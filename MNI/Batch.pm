@@ -19,7 +19,7 @@ package MNI::Batch;		# just for namespace protection,
 				# because we share some globals
 				# between subs
 use strict;
-use vars qw( @ISA @EXPORT_OK %EXPORT_TAGS );
+use vars qw( @ISA @EXPORT_OK %EXPORT_TAGS $ProgramName );
 
 use Exporter;
 use Carp;
@@ -213,7 +213,6 @@ my %Options = %DefaultOptions;
 # MUSING: this idiom appears in MNI::Spawn, and possibly other
 # places as well.  Can we abstract something into MNI::Startup?
 #
-my $ProgramName;
 if (defined $main::ProgramName) {
     *ProgramName = \$main::ProgramName;
 } else {
@@ -287,7 +286,7 @@ sub _batch_optstring
     }
 
     $optstring .= " -S" if $Options{'restartable'};
-    $optstring .= " -s $Options{'Shell'}" if $Options{'Shell'};
+    $optstring .= " -s $Options{'shell'}" if $Options{'shell'};
     $optstring .= " -m $Options{'mail_conditions'}" if $Options{'mail_conditions'};
     $optstring .= " -M $Options{'mail_address'}" if $Options{'mail_address'};
     $optstring .= " -w $Options{'write_conditions'}" if $Options{'write_conditions'};
