@@ -14,7 +14,7 @@
 #@REQUIRES   : Exporter
 #@CREATED    : 1997/04/24, Greg Ward (from misc_utilities.pl)
 #@MODIFIED   : 
-#@VERSION    : $Id: MiscUtilities.pm,v 1.3 1997-07-25 13:52:00 greg Exp $
+#@VERSION    : $Id: MiscUtilities.pm,v 1.4 1997-08-28 01:28:25 greg Rel $
 #@COPYRIGHT  : Copyright (c) 1997 by Gregory P. Ward, McConnell Brain Imaging
 #              Centre, Montreal Neurological Institute, McGill University.
 #
@@ -71,7 +71,7 @@ MNI::MiscUtilities - miscellaneous and unclassifiable utility routines
 
 C<MNI::MiscUtilities> provides a handful of otherwise unclassifiable
 utility routines.  Don't go looking for a common thread of purpose or
-operation--there isn't one!
+operation---there isn't one!
 
 =over 4
 
@@ -359,7 +359,7 @@ The list of shell meta-characters is taken from the Perl source code
 
 For example, if C<@ARGV> is C<("foo", "*.bla")>, then
 C<shellquote (@ARGV)> will return C<"foo '*.bla'"> -- thus turning a
-simple list of arguments into a string that coule be given to the shell
+simple list of arguments into a string that could be given to the shell
 to re-generate that list of arguments.
 
 =cut
@@ -422,6 +422,7 @@ sub shellquote
    join (" ", @words);
 }
 
+=back
 
 =head1 AUTHOR
 
