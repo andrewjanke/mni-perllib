@@ -14,7 +14,7 @@
 #@REQUIRES   : Exporter
 #@CREATED    : 1997/04/24, Greg Ward (from misc_utilities.pl)
 #@MODIFIED   : 
-#@VERSION    : $Id: MiscUtilities.pm,v 1.2 1997-06-05 16:01:32 greg Exp $
+#@VERSION    : $Id: MiscUtilities.pm,v 1.3 1997-07-25 13:52:00 greg Exp $
 #@COPYRIGHT  : Copyright (c) 1997 by Gregory P. Ward, McConnell Brain Imaging
 #              Centre, Montreal Neurological Institute, McGill University.
 #
@@ -36,7 +36,7 @@ use POSIX qw(strftime);
 use Sys::Hostname;
 use Cwd;
 
-@ISA = qw(Exporter AutoLoader);
+@ISA = qw(Exporter);
 @EXPORT_OK = qw(timestamp
                 userstamp
                 lcompare
@@ -44,6 +44,8 @@ use Cwd;
                 make_banner
                 shellquote);
 %EXPORT_TAGS = (all => \@EXPORT_OK);
+
+*AUTOLOAD = \&AutoLoader::AUTOLOAD;
 
 __END__
 
@@ -108,7 +110,7 @@ Returns a string containing the formatted time.
 #              1996/06/17, GW: changed to use strftime from POSIX
 #              1997/04/24, GW: copied from misc_utilities.pl, removed brackets
 #-----------------------------------------------------------------------------
-sub timestamp (;$)
+sub timestamp #(;$)
 {
    my ($tm) = @_;
 
@@ -153,7 +155,7 @@ supply a fake directory, but use the defaults for USER and HOST:
 #@MODIFIED   : 1996/05/29, GW: added directory
 #              1997/04/24, GW: copied from misc_utilities.pl, removed brackets
 #-----------------------------------------------------------------------------
-sub userstamp (;$$$)
+sub userstamp #(;$$$)
 {
    my ($user, $host, $dir) = @_;
 
@@ -342,7 +344,7 @@ shell.
 
 The exact rules are as follows: if a word contains no metacharacters and
 is not empty, it is untouched.  If it contains both single and double
-quotes (C<'> and C<">), all meta- characters are escaped with a
+quotes (C<'> and C<">), all meta-characters are escaped with a
 backslash, and no quotes are added.  If it contains just single quotes,
 it is encased in double quotes.  Otherwise -- that is, if it is empty or
 contains meta-characters other than C<'> -- it is encased in single
