@@ -1,0 +1,129 @@
+#!/usr/local/bin/perl5 -w
+
+use strict;
+use vars qw($DEBUG);
+use MNI::DataDir;
+
+require "t/fork_test.pl";
+
+my $i = 0;
+sub test { printf "%s %d\n", ($_[0] ? "ok" : "not ok"), ++$i; }
+
+print "1..6\n";
+
+my $default_dir = '@DEFAULT_DATA_DIR@';
+
+# first set up a phony data directory with some phony files
+
+my $base = '/tmp/datadir/';
+my $pkg = 'mypack';
+my @files = qw(file1 file2);
+
+END { system 'rm', '-rf', $base if defined $base && -d $base }
+mkdir ($base, 0755) || die "couldn't create $base: $!\n";
+mkdir ($base . $pkg, 0755) || die "couldn't create $base$pkg: $!\n";
+
+map { open (F, ">$base$pkg/$_") 
+         || die "couldn't create $_ in $base$pkg: $!\n" } @files;
+close (F);
+
+
+# first, some tests using the phony data dir -- these all have to 
+# be in child processes, because (in theory) you can't change 
+# MNI::DataDir's default data directory except by changing the
+# MNI_DATAPATH env. var. before it is loaded.  (In principle, we could
+# have a "BEGIN { $ENV{'MNI_DATAPATH'} = ... }" before 'use'ing 
+# MNI::DataDir.  But that's a very rude sort of hack which I do not
+# want to encourage.
+
+
+my ($status, $out, $err);
+$ENV{'MNI_DATAPATH'} = $base;           # to affect child processes
+$DEBUG = 0;
+
+# first, a successful search for the 'mypack' package data dir 
+($status, $out, $err) = fork_script (<<SCRIPT);
+use MNI::DataDir;
+\$dir = MNI::DataDir::dir ('$pkg');
+print "dir = \$dir\\n";
+SCRIPT
+
+test ($status == 0 && 
+      (shift @$out) eq '** BEGIN TEST' &&
+      @$out == 1 &&
+      $out->[0] eq "dir = $base$pkg/" &&
+      @$err == 0);
+
+
+# same thing, but add validation of the files in the data directory
+($status, $out, $err) = fork_script (<<SCRIPT);
+use MNI::DataDir;
+\$dir = MNI::DataDir::dir ('$pkg');
+MNI::DataDir::check_data (\$dir, ['file1', 'file2']);
+print "dir = \$dir\\n";
+SCRIPT
+
+test ($status == 0 && 
+      (shift @$out) eq '** BEGIN TEST' &&
+      @$out == 1 &&
+      $out->[0] eq "dir = $base$pkg/" &&
+      @$err == 0);
+
+
+# and again, but add a non-existent file to the validation list
+($status, $out, $err) = fork_script (<<SCRIPT);
+use MNI::DataDir;
+\$dir = MNI::DataDir::dir ('$pkg');
+MNI::DataDir::check_data (\$dir, ['file1', 'file2', 'file3']);
+print "dir = \$dir\\n";
+SCRIPT
+
+test ($status != 0 && 
+      (shift @$out) eq '** BEGIN TEST' &&
+      @$out == 0 &&
+      @$err == 2 &&
+      $err->[0] =~ m|$base$pkg/file3 does not exist| &&
+      $err->[1] =~ /some required data files not found/);
+
+
+# now, a failed search for a non-existent package dir
+($status, $out, $err) = fork_script (<<SCRIPT);
+use MNI::DataDir;
+\$dir = MNI::DataDir::dir ('foopack');
+print "dir = \$dir\\n";
+SCRIPT
+
+test ($status != 0 &&
+      (shift @$out) eq '** BEGIN TEST' &&
+      @$out == 0 &&
+      @$err == 1 &&
+      $err->[0] =~ /data directory for package \"foopack\" not found/);
+
+
+# now, fetch an 'installation dir' (ie. construct the dir name, but
+# don't validate it)
+($status, $out, $err) = fork_script (<<SCRIPT);
+use MNI::DataDir;
+\$dir = MNI::DataDir::install_dir ('$pkg');
+print "dir = \$dir\\n";
+SCRIPT
+
+test ($status == 0 && 
+      (shift @$out) eq '** BEGIN TEST' &&
+      @$out == 1 &&
+      $out->[0] eq "dir = $base$pkg/" &&
+      @$err == 0);
+
+# again, but for a non-existent package
+($status, $out, $err) = fork_script (<<SCRIPT);
+use MNI::DataDir;
+\$dir = MNI::DataDir::install_dir ('foopack');
+print "dir = \$dir\\n";
+SCRIPT
+
+test ($status == 0 && 
+      (shift @$out) eq '** BEGIN TEST' &&
+      @$out == 1 &&
+      $out->[0] eq "dir = ${base}foopack/" &&
+      @$err == 0 &&
+      ! -d $base . 'foopack');

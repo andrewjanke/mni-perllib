@@ -1,0 +1,153 @@
+#!/usr/local/bin/perl5 -w
+
+# ------------------------------ MNI Header ----------------------------------
+#@NAME       : make_latex
+#@INPUT      : marker file
+#              lib dir
+#              list of source files (under lib dir)
+#@OUTPUT     : a bunch of per-module pod and tex files (under current dir;
+#                names generated from the source files)
+#              title.tex
+#              inputs.tex
+#@RETURNS    : 
+#@DESCRIPTION: Makes one big LaTeX document out of all the pods in the library.
+#@METHOD     : 
+#@GLOBALS    : 
+#@CALLERS    : 
+#@CALLS      : 
+#@CREATED    : 1997/08/27, Greg Ward
+#@MODIFIED   : 
+#@VERSION    : $Id: make_latex,v 1.1 1997-09-24 18:08:52 greg Rel $
+#-----------------------------------------------------------------------------
+
+use strict;
+use POSIX qw(strftime);
+use Cwd;
+use MNI::FileUtilities qw(:check);
+use MNI::PathUtilities qw(replace_ext normalize_dirs);
+
+my $usage = "Usage: make_latex marker_file lib_dir source_files ...\n";
+
+die $usage if @ARGV < 3;
+my ($marker, $lib, @files) = @ARGV;
+
+# $lib = '../blib/lib/';              # where to find .pm and .pod files
+# $lib = '../';
+
+# @files = qw(MNI/Startup.pm
+#             MNI/Spawn.pod
+#             MNI/FileUtilities.pm
+#             MNI/PathUtilities.pm
+#             MNI/MiscUtilities.pm
+#             MNI/NumericUtilities.pm
+#             MNI/MincUtilities.pm
+#             Getopt/Tabular.pod);
+
+# my $marker = "../MNI.pm";
+
+$| = 1;
+
+normalize_dirs ($lib);
+my ($file, @texfiles);
+check_files (map ($lib . $_, @files), $marker) || exit 1;
+
+print "Generating .tex files: \n";
+foreach $file (@files)
+{
+   local $, = ' ';
+   local $\ = "\n";
+   my @cmd;
+
+   # figure out all filenames
+
+   my ($podfile, $texfile);
+   $podfile = replace_ext ('pod', $file);
+   $texfile = replace_ext ('tex', $file);
+   $file = $lib . $file;
+   push (@texfiles, $texfile);
+
+   print "$file -> $podfile -> $texfile:";
+
+   # extract pod (except 'author' and 'copyright' sections) from the
+   # input file -- unless $podfile already exists and is newer than $file
+
+   if (-e $podfile && -M $podfile < -M $file)
+   {
+      print "  skipping $file ($podfile is newer)";
+   }
+   else
+   {
+      check_output_path ($podfile) || exit 1;
+      @cmd = ($^X, 'extract_pod', '-x', 'AUTHOR|COPYRIGHT', $file, $podfile);
+      print ' ', @cmd;
+      system (@cmd)
+         && die "extract_pod failed\n";
+   }
+
+
+   # see if we have to run my_pod2latex ($texfile doesn't exist or is
+   # older than $podfile)
+
+   if (-e $texfile && -M $texfile < -M $podfile)
+   {
+      print "  skipping $podfile ($texfile is newer)";
+   }
+
+   # OK, we have to: so run my_pod2latex on $file
+
+   else
+   {
+      check_output_path ($texfile) || exit 1;
+      @cmd = ($^X, 'my_pod2latex', $podfile, $texfile);
+      print ' ', @cmd;
+      system (@cmd)
+         && die "pod2latex failed\n";
+   }
+
+}
+print "done\n";
+
+# Find the version and date from the "marker" file
+
+my $timestamp = (stat $marker)[9] || die "couldn't stat $marker: $!\n";
+my $date = strftime ("%e %B, %Y", localtime $timestamp);
+$date =~ s/^ //;                        # strip leading space put in by 
+                                        # strftime's %e
+open (MARKER, $marker) || die "couldn't open $marker: $!\n";
+my $version;
+while (defined ($_ = <MARKER>))
+{
+   if (/([\$*])(([\w\:\']*)\bVERSION)\b.*\=/)
+   {
+      no strict 'refs';
+      eval $_;
+      die "error in $marker, line $.: $@\n" if $@;
+      $version = $ {$2};
+      last;
+   }
+}
+die "no version number found in $marker\n" unless defined $version;
+
+
+# Now we start generating the .tex files that are needed by mni_perllib.tex
+
+my $title = 'title.tex';
+my $inputs = 'inputs.tex';
+
+open (TITLE, ">$title") || die "couldn't open $title: $!\n";
+print TITLE <<END;
+\\title{The MNI Perl Library---Version $version\\\\
+       Programmer's Reference}
+\\author{Greg Ward}
+\\date{$date}
+END
+close TITLE;
+
+open (INPUTS, ">$inputs") || die "couldn't open $inputs: $!\n";
+my $texfile;
+foreach $texfile (@texfiles)
+{
+   print INPUTS "\\input $texfile\n";
+   print INPUTS "\\newpage\n";
+}
+close INPUTS;
