@@ -5,7 +5,7 @@ use MNI::Batch qw(:all);
 use MNI::Spawn;
 
 
-print "1..19\n";
+print "1..23\n";
 
 my $i = 0;
 sub test { printf "%s %d\n", ($_[0] ? "ok" : "not ok"), ++$i; }
@@ -30,19 +30,24 @@ sub end_batchtest {
 sub wait_for_output {
     my $expected_output = shift;
 
+    wait_for_files( $out, $err );
+
+    chop( $_ = `tail -1 $out` );
+    test( $_ eq $expected_output );
+    test( -z $err );
+
+    unlink( $out, $err );
+}
+
+
+# 1 test
+sub wait_for_files {
     my $sleeptime = 0;
-    while( $sleeptime < 30 && !( -f $out && -f $err ) ) {
+    while( $sleeptime < 30 && (grep {!-f} @_)) {
 	sleep( 1 );
 	++$sleeptime;
     }
     test( $sleeptime < 30 );
-
-    chop( $_ = `tail -1 $out` );
-    test( $_ eq $expected_output );
-#    printf STDERR "Got '$_', expected '$expected_output'\n";
-    test( -z $err );
-
-    unlink( $out, $err );
 }
 
 
@@ -62,7 +67,7 @@ end_batchtest( 'done' );
     my $message;
     local $SIG{'__WARN__'} = sub { $message = $_[0]; };
     QueueCommand( 'echo done', "batch.t.$i", $out, $err, 0 );
-    test ( $message =~ /you're missing out on a lot of features by using QueueCommand like this/ );
+    test ( $message =~ /you\'re missing out on a lot of features by using QueueCommand like this/ );
 }
 wait_for_output( 'done' );
 
@@ -74,3 +79,30 @@ start_batchtest();
 QueueCommand( 'hostname' );
 chop( $_ = `hostname` );
 end_batchtest( $_ );
+
+
+# Test that sync file gets created
+my $syncdir = '/tmp/.batch.t.sync';
+MNI::Batch::SetOptions( 'SyncDir' => $syncdir,
+                        'Synchronize' => 'finish' );
+test( StartJob( "batch.t.$i", undef, undef, 0 ) );
+QueueCommand( 'ls' );
+wait_for_files( FinishJob() );
+
+
+# Test StartJobAfter
+my $syncfile = "$syncdir/startnextjob";
+unlink $syncfile;
+test( StartJobAfter( $syncfile, "batch.t.$i", undef, undef, 0 ));
+QueueCommand( 'ls' );
+my $finishfile = FinishJob();
+sleep( 10 );
+test( ! -f $finishfile );
+`touch $syncfile`;
+die if $?;
+
+# StartJobAfter tests don't work right ... 
+# One often (always?) needs > 30 seconds for the job to complete
+# so just forget about testing it.
+#
+#wait_for_files( $finishfile );

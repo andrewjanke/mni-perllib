@@ -20,14 +20,15 @@ package MNI::Batch;		# just for namespace protection,
 				# between subs
 use strict;
 use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS
-            %Options %SyncFiles $JobPID %JobName
+            %Options %SyncFiles $WaitFile $JobPID %JobName
             $ProgramName/;
 use Exporter;
 use Carp;
 use MNI::MiscUtilities qw( timestamp userstamp shellquote); 
 
 @ISA = qw(Exporter);
-@EXPORT_OK = qw(StartJob FinishJob Synchronize QueueCommand QueueCommands);
+@EXPORT_OK = qw(StartJob StartJobAfter FinishJob Synchronize 
+		QueueCommand QueueCommands);
 %EXPORT_TAGS = (all => [@EXPORT_OK]);
 
 
@@ -186,6 +187,7 @@ $JobPID = 0;
 %JobName = ();                  # map job pid -> name
 %SyncFiles = ();                # map job pid -> filename hash
                                 # the filename hash maps condition to filename
+$WaitFile = '';                 # delay job until file appears
 
 
 # [CC] inspired by (errr, "copied" from ;-) MNI::Spawn.pm 
@@ -220,14 +222,15 @@ sub gen_batch_options
    # Now the more job-specific stuff (provided by parameters to either
    # &StartJob or &QueueCommand)
 
+   # Does it make ssense to allow stdout, stderr, AND merge?
+   # The MNI::Spawn module, for instance, ignores the stderr file,
+   # and forces a merge, in this situation.
    $options .= " -J $jobname" if $jobname;
    $options .= " -o $stdout" if $stdout;
    $options .= " -e $stderr" if $stderr;
    $options .= " -k" if $merge;
 
-   # Does it make ssense to allow stdout, stderr, AND merge?
-   # The MNI::Spawn module, for instance, ignores the stderr file,
-   # and forces a merge, in this situation.
+   $options .= " -a $WaitFile" if $WaitFile;
 
    $options;
 }
@@ -428,11 +431,29 @@ END
 }  # &StartJob
 
 
+=item StartJobAfter( filename, jobname, stdout, stderr, merge )
+
+Like StartJob, but delay the job until the I<filename> exists.
+
+=cut
+
+sub StartJobAfter
+{
+    $WaitFile = shift;
+    my $ret = StartJob( @_ );
+    $WaitFile = '';
+    return $ret;
+}
+
+
 =item FinishJob( [delay] )
 
 Called after all commands have been queued for the currently-opened job.
 This function submits the list of commands to the batch queue.
 Optionally, sleep for I<delay> seconds.
+
+If the I<Synchronize> option is set to "finish" or "both", the filename
+for the finish synchronizing file is returned.
 
 =cut
 
@@ -466,11 +487,13 @@ sub FinishJob
        return;
    }
 
+   my $finish_syncfile = '';
    if ($Options{'Synchronize'} eq "finish" ||
        $Options{'Synchronize'} eq "both")
    {
       &create_sync_file ("finish", $Options{'SyncDir'}, $JobName{$JobPID},
                           $ENV{'HOST'}, $JobPID, \%SyncFiles);
+      $finish_syncfile = $SyncFiles{$JobPID}{'finish'};
    }
 
    if ($Options{'ExportTmpDir'} && $Options{'NukeTmpDir'})
@@ -486,6 +509,7 @@ END
    croak ("`batch' exited with non-zero status code\n") if $?;
    $JobPID = 0;
    sleep $sleeptime if defined $sleeptime;
+   return $finish_syncfile;
 }
 
 
@@ -613,6 +637,8 @@ sub Synchronize
 If there is an open batch job, (created with StartJob) add the command to it.
 Otherwise create a new job to run just this command.
 
+No useful return value.
+
 =cut
 
 # ------------------------------ MNI Header ----------------------------------
@@ -701,6 +727,9 @@ Queues multiple commands to the same job.  If a job is already open, they are
 added to it; otherwise, a new job is created for I<all> the commands in
 commands.
 
+If the I<Synchronize> option is set to "finish" or "both", the filename for
+the finish synchronizing file is returned.
+
 =cut
 
 # ------------------------------ MNI Header ----------------------------------
@@ -734,7 +763,7 @@ sub QueueCommands
 
    unless (@commands)
    {
-      warn "No commands to queue!\n";
+      carp "No commands to queue!";
       return;
    }
 
@@ -748,10 +777,10 @@ sub QueueCommands
    my $cmd;
    foreach $cmd (@commands)
    {
-      &QueueCommand ($cmd);
+      QueueCommand ($cmd);
    }
 
-   FinishJob () if $exclusive;
+   return FinishJob() if $exclusive;
 }
 
 =back
