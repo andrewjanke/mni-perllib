@@ -13,11 +13,11 @@
 #              generate_numbered_filename
 #              statfs
 #@EXPORT_TAGS: all, check, search, misc
-#@USES       : POSIX, Config, MNI::PathUtilities
+#@USES       : POSIX, MNI::PathUtilities
 #@REQUIRES   : Exporter
 #@CREATED    : 1997/04/25, Greg Ward (from file_utilities.pl, revision 1.16)
 #@MODIFIED   : 
-#@VERSION    : $Id: FileUtilities.pm,v 1.1 1997-05-13 18:48:15 greg Exp $
+#@VERSION    : $Id: FileUtilities.pm,v 1.2 1997-05-29 22:22:50 greg Exp $
 #@COPYRIGHT  : Copyright (c) 1997 by Gregory P. Ward, McConnell Brain Imaging
 #              Centre, Montreal Neurological Institute, McGill University.
 #
@@ -31,29 +31,28 @@ package MNI::FileUtilities;
 use strict;
 use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS);
 
-require 5.002;
+require 5.003;
 require Exporter;
 require AutoLoader;
 
 use Carp;
 use POSIX qw(strftime);
-use Config;                     # as soon as we upgrade to 5.003, can lose
-                                # this and use $^O...
 
 # use MNI::PathUtilities qw(replace_dir);
 
 @ISA = qw(Exporter AutoLoader);
-@EXPORT    = qw(check_output_dirs
+@EXPORT = ();
+@EXPORT_OK = qw(check_output_dirs
                 check_output_path
                 check_input_dirs
                 check_files
-                test_file);
-@EXPORT_OK = qw(search_directories
+                test_file
+                search_directories
                 find_program
                 find_programs
                 generate_numbered_filename
                 statfs);
-%EXPORT_TAGS = (all    => [@EXPORT, @EXPORT_OK],
+%EXPORT_TAGS = (all    => [@EXPORT_OK],
                 check  => [qw(check_output_dirs
                               check_output_path
                               check_input_dirs
@@ -128,6 +127,38 @@ C<generate_numbered_filename>, C<statfs>.
 
 =back
 
+=head1 EXPORTS
+
+By default, C<MNI::FileUtilities> exports no symbols.  You can import in
+the usual one-name-at-a-time way like this:
+
+   use MNI::FileUtilities qw(check_output_dirs test_file);
+
+which works fine if you're only using a few routines.  This quickly gets
+cumbersome in large programs that use lots of routines, though, so the
+module provides a couple of "export tags" to let you specify subroutines
+by group.  The tags are:
+
+=item C<check>
+
+C<check_output_dirs>, C<check_output_path>, C<check_input_dirs>,
+C<check_files>, and C<test_file>
+
+=item C<search>
+
+C<search_directories>,  C<find_program>, and C<find_programs>
+
+=item C<misc>
+
+C<generate_numbered_filename> and C<statfs>
+
+For example, to import the names of all the file/directory checking
+subroutines:
+
+   use MNI::FileUtilities qw(:check);
+
+Finally, an C<all> tag is provided to import all exportable symbols.
+
 =head1 ERROR HANDLING
 
 Error handling is fairly consistent: in general, the routines here print a
@@ -150,7 +181,7 @@ mess up by supplying bad arguments, the C<MNI::FileUtilities> routines will
 C<die> or C<croak>.  If blundering on in the face of error would cause
 serious problems for future invocations of a routine, it will C<die>
 (C<generate_numbered filename> is the only one that falls in this
-categrory).  Finally, if you ask a routine for the impossible, it will
+category).  Finally, if you ask a routine for the impossible, it will
 C<die>.  (The only instance of this currently is calling C<statfs> on an
 architecture other than Linux/x86 or IRIX.)
 
@@ -1119,7 +1150,7 @@ sub statfs                      # this ought to be made more standard...
    my ($type, $pad, $bsize, $frsize, $blocks, $bfree, $bavail);
    my ($files, $ffree, $fsid, $namelen, $spare, $fname, $fpack);
 
-   if ($Config{'archname'} =~ /^i[0-9]?86-linux$/)
+   if ($^O eq 'linux')
    {
       # structure size taken from i86 Linux 2.0 man pages; only tested
       # on Linux 2.0/i86 
@@ -1131,7 +1162,7 @@ sub statfs                      # this ought to be made more standard...
          = unpack ("lllllll2ll6", $buf);
       $bfree = $bavail;         # ignore the free/available distinction (RTFM)
    }
-   elsif ($Config{'osname'} eq 'irix')
+   elsif ($^O eq 'irix')
    {
       my $len = (2 +2 + (6 * 4) + 6 + 6);
       $buf = ' ' x $len;
@@ -1141,7 +1172,7 @@ sub statfs                      # this ought to be made more standard...
    }
    else
    {
-      die "Sorry, I don't know how to do `statfs' on the $Config{'archname'} architecture\n";
+      die "Sorry, I don't know how to do `statfs' under $^O\n";
    }
 
    if ($r == 0)                         # success?
@@ -1155,5 +1186,20 @@ sub statfs                      # this ought to be made more standard...
    }
 }
 
+=back
+
+=head1 AUTHOR
+
+Greg Ward, <greg@bic.mni.mcgill.ca>.
+
+=head1 COPYRIGHT
+
+Copyright (c) 1997 by Gregory P. Ward, McConnell Brain Imaging Centre,
+Montreal Neurological Institute, McGill University.
+
+This file is part of the MNI Perl Library.  It is free software, and may be
+distributed under the same terms as Perl itself.
+
+=cut
 
 1;
