@@ -1,0 +1,4 @@
+Changes in Release 0.06
+
+* Spawn::Spawn( ..., batch => 1) now invokes Batch 
+* MNI::Tag interface to tag files

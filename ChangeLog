@@ -1,3 +1,71 @@
+Sun Jan 16 14:58:54 2000  Steve Robbins  <steve@nyongwa.montreal.qc.ca>
+
+	* NEWS: new file.  Summary of USER-visible changes between
+ 	releases.
+
+	* MNI/Batch.pm (StartJob): clear %SyncFiles before assigning to it
+ 	when starting new job; otherwise old values for same JobPID will
+ 	be returned.
+
+	* t/batch-0.t: new file.  Test basic features of MNI::Batch.pm,
+ 	mostly the return values.
+
+	* t/batch-1.t: renamed from 'batch.t' in order that it be executed
+	_after_ batch-0.t.
+
+	* MNI/Batch.pm (QueueCommands): return startfile (if StartJob
+ 	called), along with finish and fail files.
+
+Sat Dec 18 08:55:23 1999  Steve Robbins  <steve@nyongwa.montreal.qc.ca>
+
+	* MNI/Batch.pm (_queue_one_command): bugfix.  If passed an array
+	ref, take program name from first element of array to avoid
+	becoming confused by shellquote's quoting of metacharacters.
+
+Fri Dec 17 17:59:20 1999  Steve Robbins  <steve@nyongwa.montreal.qc.ca>
+
+	* MNI/Batch.pm (_queue_one_command): code reorganization; there is
+	now no useful return value.
+
+	* MNI/Batch.pm (QueueCommands): code reorganization; clean up pod
+	documentation.
+
+	* MNI/Batch.pm (Synchronize): code reorganization and bugfix.  The
+	old computation for $numjobs overcounted in the case that some
+	jobs synchronize on 'start' and some synchronize on 'finish'.  We
+	now count just the jobs that synchronize for the desired
+	condition.
+
+	* MNI/Batch.pm (FinishJob): code reorganization; now returns
+	array of filenames (finishfile, failfile).  For backwards
+	compatibility, returns scalar finishfile in scalar context.
+
+	* MNI/Batch.pm (StartJob): code reorganization, no semantic
+	changes.
+
+	* MNI/Batch.pm (_emit_rmtmpdir_shellcode): 
+	* MNI/Batch.pm (_emit_mktmpdir_shellcode): 
+	* MNI/Batch.pm (_emit_syncfile_shellcode): new.  Write shell
+	code to BATCH filehandle.
+
+	* MNI/Batch.pm (_set_syncfile_name): new.  Generate syncfile
+	name for given condition and store in %SyncFiles.
+
+	* MNI/Batch.pm (create_sync_file): split into two subroutines:
+	_set_syncfile_name and _emit_syncfile_shellcode.
+
+	* MNI/Batch.pm (_syncfile_name): renamed to _get_syncfile_name;
+	$pid defaults to $JobPID if not specified.
+
+	* t/batch.t (wait_for_files): test that StartJob() returns a
+	defined start file and that FinishJob() returns (in scalar
+	context) a defined finish file.
+
+Thu Dec  9 16:52:04 1999  Steve ROBBINS  <stever@bic.mni.mcgill.ca>
+
+	* MNI/Tag.pm (copy): croak if copy is not invoked on a valid
+	reference.
+
 1999-12-02  Chris Cocosco  <crisco@bic.mni.mcgill.ca>
 
 	* MNI/Batch.pm: functionality changes! 

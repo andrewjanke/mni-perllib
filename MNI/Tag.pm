@@ -46,7 +46,10 @@ sub open {
 #
 sub copy {
     my( $that, $filename ) = @_;
-    my $class = ref($that) || $that;
+    my $class = ref($that);
+
+    croak "The copy constructor must be invoked on a valid reference"
+      unless $class;
 
     my $self = { %$that };
 

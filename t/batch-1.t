@@ -5,7 +5,7 @@ use MNI::Batch qw(:all);
 use MNI::Spawn;
 
 
-print "1..19\n";
+print "1..21\n";
 
 my $i = 0;
 sub test { printf "%s %d\n", ($_[0] ? "ok" : "not ok"), ++$i; }
@@ -105,8 +105,12 @@ MNI::Batch::SetOptions( 'syncdir' => $syncdir, 'synchronize' => 'both' );
 
 # 1 test
 my $startfile = StartJob( job_name => "batch.t.$i" );
+test( defined($startfile) );
 QueueCommand( 'ls' );
+# the following tests the archaic form of FinishJob()
+# that returns only the 'finish' filename, in scalar context.
 my $finishfile = FinishJob();
+test( defined($finishfile) );
 wait_for_files( $startfile, $finishfile );
 
 
