@@ -1,3 +1,10 @@
+2001-06-11  Steve M. Robbins  <steve@nyongwa.montreal.qc.ca>
+
+	* MNI/Batch.pm (_emit_syncfile_shellcode): Use "touch" and "mv"
+	to create syncfile; avoids problems if "touch" wants to examine
+	the file after creating it (SGI does this).  Thanks to Chris
+	for uncovering this.
+
 2001-06-09  Chris Cocosco  <crisco@bic.mni.mcgill.ca>
 
 	* MNI/Spawn.pm (set_undefined_option): also try main::$varname if

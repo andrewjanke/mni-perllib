@@ -12,7 +12,7 @@
 #@CREATED    : 95/11/13, Greg Ward
 #@MODIFIED   : 98/11/06, Chris Cocosco: -ported from Batch.pm ... (STILL BETA!)
 #@MODIFIED   : (...see CVS for more history info)
-#@VERSION    : $Id: Batch.pm,v 1.16 2001-02-26 20:13:17 stever Exp $
+#@VERSION    : $Id: Batch.pm,v 1.17 2001-06-11 16:06:29 stever Exp $
 #-----------------------------------------------------------------------------
 require 5.002;
 
@@ -299,9 +299,15 @@ sub _emit_syncfile_shellcode {
     my $file = _get_syncfile_name( $condition )
       or croak "Internal error: no sync file";
 
+    # SGI's /bin/touch is NOT atomic: if the file does not exist,
+    # "touch foo" will create it, then call stat() and utime().
+    # This breaks code that assumes one can remove the syncfile
+    # as soon as it is created.  We use the (atomic) mv command, instead.
+
    print BATCH <<END;
 if test ! -d $dir; then mkdir -p $dir || exit 1; fi
-touch $file || exit 1
+touch ${file}_
+mv ${file}_ $file || exit 1
 END
 }
 
