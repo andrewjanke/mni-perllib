@@ -1,5 +1,7 @@
 2001-02-26  Steve M. Robbins  <steve@nyongwa.montreal.qc.ca>
 
+	* MNI/Batch.pm (GetJobid): New.  Returns ID of currently-open job.
+
 	* MNI.pm: Set VERSION to 0.07.
 
 	* MNI/Batch.pm (JobStatus): New.  Return status of job, as

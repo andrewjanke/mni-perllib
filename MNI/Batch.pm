@@ -12,7 +12,7 @@
 #@CREATED    : 95/11/13, Greg Ward
 #@MODIFIED   : 98/11/06, Chris Cocosco: -ported from Batch.pm ... (STILL BETA!)
 #@MODIFIED   : (...see CVS for more history info)
-#@VERSION    : $Id: Batch.pm,v 1.15 2001-02-26 18:45:41 stever Exp $
+#@VERSION    : $Id: Batch.pm,v 1.16 2001-02-26 20:13:17 stever Exp $
 #-----------------------------------------------------------------------------
 require 5.002;
 
@@ -25,7 +25,7 @@ use vars qw( @ISA @EXPORT_OK %EXPORT_TAGS $ProgramName );
 use Exporter;
 use Carp;
 use MNI::MiscUtilities qw( timestamp userstamp shellquote );
-use MNI::Spawn;
+use MNI::Spawn ();
 
 
 @ISA = qw(Exporter);
@@ -656,6 +656,18 @@ sub FinishJob
 }
 
 
+=item GetJobid()
+
+Returns the ID of the currently-opened job, if called
+after C<StartJob> and before C<FinishJob>.  Otherwise,
+zero is returned.
+
+=cut
+
+sub GetJobid{ return $JobPID; }
+
+
+
 =item Synchronize( onwhat, delay )
 
 =item Synchronize( onwhat, initial_delay, periodic_delay [,timeout] )
@@ -920,7 +932,7 @@ sub JobStatus {
 	delete $opts{queue};
     }
 
-    $opts{stderr} = UNTOUCHED
+    $opts{stderr} = MNI::Spawn::UNTOUCHED
       unless exists $opts{stderr};
 
     my $spawner = new MNI::Spawn( %opts, batch => 0 );
