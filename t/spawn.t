@@ -29,6 +29,9 @@ map { $_ = "$cwd/$_" unless m|^/|; } @INC; # so autoload will work after chdir
 
 $DEBUG = exists $ENV{'SPAWN_TEST_DEBUG'} ? $ENV{'SPAWN_TEST_DEBUG'} : 0;
 
+@path = grep ($_ ne '.', split (':', $ENV{'PATH'}));
+$ENV{'PATH'} = join (':', '.', @path);
+
 $errfile = "$tmp_dir/err";
 $outfile = "$tmp_dir/out";
 
