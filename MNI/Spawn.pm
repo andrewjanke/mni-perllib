@@ -11,7 +11,7 @@
 #@REQUIRES   : Exporter
 #@CREATED    : 1997/07/07, Greg Ward (loosely based on JobControl.pm, rev 2.8)
 #@MODIFIED   : 
-#@VERSION    : $Id: Spawn.pm,v 1.1 1997-07-23 15:18:06 greg Exp $
+#@VERSION    : $Id: Spawn.pm,v 1.2 1997-07-25 01:06:14 greg Exp $
 #@COPYRIGHT  : Copyright (c) 1997 by Gregory P. Ward, McConnell Brain Imaging
 #              Centre, Montreal Neurological Institute, McGill University.
 #
@@ -54,13 +54,13 @@ sub MERGE     { \8 }
 
 
 # This provides default values for all options, as well as a standard list
-# of all the options, so we can check 'em for validity when the user supplies
+# of all the options, so we can check them for validity when the user sets
 # them
 my %DefaultOptions =
    (verbose      => undef,              # print commands as we execute them?
     execute      => undef,              # actually execute commands?
     strict       => 1,                  # complain about unknown programs?
-    complete     => 1,                  # should we search, add options?
+    complete     => 1,                  # should we search, add def. args?
     search       => 1,                  # should we search?
     add_defaults => 1,                  # should we add default arguments?
     search_path  => undef,              # list of directories to search
@@ -389,12 +389,17 @@ sub spawn
 
 # ----------------------------------------------------------------------
 # End of externally-used stuff -- now come the methods and subroutines
-# called only by `spawn' itself:
+# only called internally (i.e. by `spawn' itself or by other interal
+# routines):
 #   check_program    (method)
 #   complete_command (method)
-#   output_mode
-#   spawn_redirect
-#   spawn_capture
+#   output_mode      (subroutine)
+#   exec_command     (subroutine)
+#   gather_error     (subroutine)
+#   obituary         (method)
+#   check_status     (method)
+#   spawn_capture    (method)
+#   spawn_redirect   (method)
 # ----------------------------------------------------------------------
 
 # ------------------------------ MNI Header ----------------------------------
@@ -427,7 +432,10 @@ sub spawn
 #              bomb via &check_status.
 #@METHOD     : 
 #@GLOBALS    : %Programs, %PreOptions, %PostOptions
-#@CALLS      : 
+#@CALLERS    : complete_command
+#@CALLS      : MNI::FileUtilities::find_program
+#              MNI::PathUtilities::split_path
+#              check_status
 #@CREATED    : 1996/11/19, GPW (from prototype code in &Execute)
 #@MODIFIED   : 1997/07/08, GPW (copied from JobControl.pm)
 #-----------------------------------------------------------------------------
@@ -517,7 +525,9 @@ sub check_program
 #              string) with these goodies included.
 #@METHOD     : 
 #@GLOBALS    : 
-#@CALLS      : 
+#@CALLERS    : spawn
+#@CALLS      : check_program
+#              usestamp, timestamp, shellquote (from MNI::MiscUtilities)
 #@CREATED    : 1996/12/10, GPW (from &Execute)
 #@MODIFIED   : 1997/07/08, GPW (copied from JobControl.pm)
 #-----------------------------------------------------------------------------
@@ -642,11 +652,18 @@ sub complete_command
 
 # ------------------------------ MNI Header ----------------------------------
 #@NAME       : output_mode
-#@INPUT      : 
+#@INPUT      : $name - name of the option describing some output stream
+#                      (for error messages)
+#              $dest - the value of the option that the user supplied 
+#                      (either a string [filename], reference, or one of
+#                      the output mode constants)
 #@OUTPUT     : 
-#@RETURNS    : 
-#@DESCRIPTION: 
-#@CALLERS    : 
+#@RETURNS    : an output mode constant (UNTOUCHED, MERGE, REDIRECT, or CAPTURE)
+#@DESCRIPTION: Generalizes a particular value of the `stdout' or `stderr'
+#              options into one of the four possible things we can do
+#              with an output stream (leave it untouched, merge it with 
+#              stdout [stderr only], redirect it, or capture it).
+#@CALLERS    : spawn
 #@CALLS      : 
 #@CREATED    : 1997/07/07, GPW
 #@MODIFIED   : 
@@ -660,13 +677,15 @@ sub output_mode
    {
       if (ref $dest)
       {
+         croak "spawn: $name must be a scalar or array reference to capture"
+            unless ref $dest eq 'SCALAR' || ref $dest eq 'ARRAY';
          ($mode = UNTOUCHED, $dest = '', last MODE)
             if $dest == UNTOUCHED;
          ($mode = MERGE, last MODE)
             if $dest == MERGE;
          croak "spawn: $name must be a filename to redirect" 
             if $dest == REDIRECT;
-         croak "spawn: $name must be a scalar reference to capture"
+         croak "spawn: $name must be a reference to capture"
             if $dest == CAPTURE;
          $mode = CAPTURE, last MODE;
       }
@@ -749,6 +768,7 @@ sub exec_command
 #              child process' stderr.
 #@METHOD     : 
 #@GLOBALS    : 
+#@CALLERS    : spawn_redirect, spawn_capture
 #@CALLS      : 
 #@CREATED    : 1996/12/10, GPW (from &spawn_redirect and &spawn_capture)
 #@MODIFIED   : 1997/07/08, GPW (from JobControl.pm)
@@ -772,15 +792,23 @@ sub gather_error
 
 
 # ------------------------------ MNI Header ----------------------------------
-#@NAME       : 
-#@INPUT      : 
+#@NAME       : obituary
+#@INPUT      : $status
+#              $program
+#              $command
+#              $stdout_mode
+#              $stderr_mode
+#              $output
+#              $error
 #@OUTPUT     : 
 #@RETURNS    : 
-#@DESCRIPTION: 
-#@GLOBALS    : $ProgramName
+#@DESCRIPTION: Generates and mails a fairly detailed death notice to the 
+#              address from the `notify' option.  (`notify' must be non-
+#              empty, and `execute' must be true, for this to be done.)
+#@GLOBALS    : $main::ProgramName
+#@CALLERS    : check_status
 #@CALLS      : 
 #@CREATED    : 
-#@MODIFIED   : 
 #-----------------------------------------------------------------------------
 sub obituary
 {
@@ -789,11 +817,11 @@ sub obituary
 
    my ($text, $cwd);
 
-   $text = '';
-   $cwd = getcwd();
-
    if ($self->{notify} && $self->{execute})
    {
+      $text = '';
+      $cwd = getcwd();
+
       $text .= "$::ProgramName crashed" . 
          ($program ? " while running $program" : "") . "\n";
       $text .= "from directory: $cwd\n";
@@ -878,6 +906,7 @@ EOM
 #              non-zero.
 #@METHOD     : 
 #@GLOBALS    : 
+#@CALLERS    : 
 #@CALLS      : 
 #@CREATED    : 1996/01/17, GPW (from code in &Spawn)
 #@MODIFIED   : 1997/07/08, GPW (from JobControl.pm)
@@ -972,7 +1001,8 @@ sub check_status
 #              and child; captures stderr via a temporary file if it has
 #              to
 #@GLOBALS    : 
-#@CALLS      : 
+#@CALLERS    : spawn
+#@CALLS      : exec_command, gather_error, check_status
 #@CREATED    : 1996/12/10, GPW (from &Spawn)
 #@MODIFIED   : 1997/07/08, GPW (from JobControl.pm)
 #-----------------------------------------------------------------------------
@@ -1035,7 +1065,8 @@ sub spawn_capture
 #              or left untouched.
 #@METHOD     : 
 #@GLOBALS    : 
-#@CALLS      : 
+#@CALLERS    : spawn
+#@CALLS      : exec_command, gather_error, check_status
 #@CREATED    : 1996/12/10, GPW (from &Spawn)
 #@MODIFIED   : 1997/07/08, GPW (from JobControl.pm)
 #-----------------------------------------------------------------------------
@@ -1063,14 +1094,6 @@ sub spawn_redirect
    }
 
    $status = $?;
-
-
-   # Weirdness here (at least under 5.002): if I do the `if' as a statement
-   # modifier, then it actually calls &check_status here (or so the
-   # debugger claims); if I use an `if' statement, it works fine.  Hmmmph!
-
-#   ($error = &gather_error ($pid))      # if stderr was put in a temp file,
-#      if ($stderr eq "-")               # gather it up to a variable
 
    if ($stderr_mode == CAPTURE)
    {
