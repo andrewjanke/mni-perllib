@@ -8,7 +8,7 @@
 #@REQUIRES   : Exporter
 #@CREATED    : 1997/07/25, Greg Ward (from old Startup.pm, rev. 1.23)
 #@MODIFIED   : 
-#@VERSION    : $Id: Startup.pm,v 1.3 1997-08-25 01:02:42 greg Exp $
+#@VERSION    : $Id: Startup.pm,v 1.4 1997-08-26 23:15:57 greg Exp $
 #@COPYRIGHT  : Copyright (c) 1997 by Gregory P. Ward, McConnell Brain Imaging
 #              Centre, Montreal Neurological Institute, McGill University.
 #
@@ -597,30 +597,67 @@ C<MNI::Startup::self_announce> and C<MNI::Startup::backgroundify>.
 
 =over 4
 
-=item self_announce ([LOG [, PROGRAM [, ARGS]]])
+=item self_announce ([LOG [, PROGRAM [, ARGS [, FORCE]]]])
 
-Prints a brief description of the program's execution environment: user,
-host, start directory, date, time, progam name, and program arguments.
-LOG, if supplied, should be a filehandle reference (i.e., either a GLOB
-ref, an C<IO::Handle> (or descendants) object, or a C<FileHandle>
-object); it defaults to C<\*STDOUT>.  PROGRAM should be the program
-name; it defaults to C<$0>.  ARGS should be a reference to the program's
-list of arguments; it defaults to C<\@ARGV>.  (Thus, to ensure that
-C<self_announce> prints an accurate record, you should never fiddle with
-C<$0> or C<@ARGV> in your program---the former is made unnecessary by
+Conditionally prints a brief description of the program's execution
+environment: user, host, start directory, date, time, progam name, and
+program arguments.  LOG, if supplied, should be a filehandle reference
+(i.e., either a GLOB ref, an C<IO::Handle> (or descendants) object, or a
+C<FileHandle> object); it defaults to C<\*STDOUT>.  PROGRAM should be the
+program name; it defaults to C<$0>.  ARGS should be a reference to the
+program's list of arguments; it defaults to C<\@ARGV>.  (Thus, to ensure
+that C<self_announce> prints an accurate record, you should never fiddle
+with C<$0> or C<@ARGV> in your program---the former is made unnecessary by
 F<MNI::Startup>'s creation and export of C<$ProgramName>, and the latter
 can be avoided without much trouble.  The three-argument form of
 C<Getopt::Tabular::GetOptions>, in particular, is designed to help you
 avoid clobbering C<@ARGV>.)
 
-This can be enormously useful when trying to recreate the run of a
-program by dissecting its log file; for that reason, it is most commonly
-called only when the program's output is being logged to a file
-(i.e. when C<STDOUT> is not a TTY):
+Normally, C<self_announce> will only print its announcement if LOG
+(usually, STDOUT) is I<not> a tty---i.e., your program's output is being
+redirected to a file or pipe.  This prevents pointlessly cluttering the
+display in an interactive run, but gives the user a record of exactly
+what command he ran to generate a particular log file (and the
+associated results).  If you supply a true value for FORCE, then
+C<self_announce> will print its message regardless of the stream you're
+sending it to.
 
-   self_announce () unless -t STDOUT;
+In the future, C<self_announce> may become even more picky, and only
+print its announcement if it appears to have been run directly from a
+user's shell or batch job, and not by some other program.  The idea here
+is that the program that runs your program should have printed out the
+arguments used, so your program doesn't have to---again, this would be
+to cut down clutter (particularly when the two programs share a log
+file).
 
 =cut
+
+# a note on the last paragraph there: if it weren't for batch, it would be
+# enough to check if the current process is a process group leader ($$ ==
+# getpgrp), since commands run directly by a user from a shell are group
+# leaders, and proceses spawned by them are not.  But the situation is
+# different in a batch job: the shell that runs the "df*" script is the
+# process group leader (spawned by batchd), so the program it runs is not.
+# If the program were exec'd by that shell, it'd work -- but since I don't
+# have control over every batch job submitted, that's not good enough.
+# Hmmm.
+
+# I wonder if there's a way to check if program_name(getppid) =~ /^df/.
+# Hmmm.
+
+# whoops, another problem -- 'at' and 'cron' jobs are in the process group
+# of the cron daemon.  They should be self-announced too.
+
+# One possible solution is to assume that self_announce'ing programs will
+# be spawned by other self_announce'ing programs, and check/set a secret
+# environment variable to ensure that only one program in a chain of such
+# programs gets to self_announce.
+
+# Or, since it's MNI::Spawn that prints its child's command, have 
+# exec_command set an environment variable that is checked here.
+# It should encode the pid and program name of the child program, so 
+# we can be sure we're looking at the right thing.
+
 
 # ------------------------------ MNI Header ----------------------------------
 #@NAME       : self_announce
@@ -641,11 +678,17 @@ called only when the program's output is being logged to a file
 #-----------------------------------------------------------------------------
 sub self_announce
 {
-   my ($log, $program, $args) = @_;
+   my ($log, $program, $args, $force) = @_;
+
+   croak "self_announce: if supplied, \$log must be an open filehandle"
+      if defined $log && ! (ref $log && defined fileno($log));
 
    $log = \*STDOUT unless defined $log;
    $program = $0 unless defined $program;
    $args = \@ARGV unless defined $args;
+
+   # don't do it if it would go to a terminal (unless we're forced to)
+   return if !$force && -t fileno ($log) && 
 
    printf $log ("[%s] [%s] running:\n", 
                 userstamp (undef, undef, $StartDir), timestamp ());
@@ -657,34 +700,39 @@ sub self_announce
 
 Redirects C<STDOUT> and C<STDERR> to a log file and detaches to the
 background by forking off a child process.  LOG must be either a
-filehandle (represented by a glob reference) or a filename; if the
-former, it is assumed that the file was opened for writing, and
-C<STDOUT> and C<STDERR> are redirected to that file.  If LOG is not a
-reference, it is assumed to be a filename to be opened for output.  You
-can also supply a filename in the form of the second argument to
-C<open>, i.e. with C<'E<gt>'> or C<'E<gt>E<gt>'> already prepended.  If
-you just supply a bare filename, C<backgroundify> will either clobber or
-append, depending on the value of the C<$Clobber> global.
-C<backgroundify> will then redirect C<STDOUT> and C<STDERR> both to this
-file.  PROGRAM and ARGS are the same as for C<self_annouce>; in fact,
-they are passed to C<self_announce> after redirecting C<STDOUT> and
-C<STDERR> so that your program will describe its execution in its own
-log file.  (Thus, it's never necessary to call both C<self_announce> and
-C<backgroundify> in the same run of a program.)
-
-Note that while both C<backgroundify> and C<self_announce> allow you to
-supply LOG as a filehandle, C<backgroundify> isn't as flexible: use of
-the C<IO::Handle> or C<FileHandle> classes isn't allowed, because I
-couldn't figure out a reliable, consistent way to redirect to those
-beasts.  If this stuff becomes better documented in a future version of
-Perl, I may change this... but don't hold your breath.
+filehandle (represented by a glob reference, or an F<IO::Handle> (or
+descendents) object) or a filename; if the former, it is assumed that
+the file was opened for writing, and C<STDOUT> and C<STDERR> are
+redirected to that file.  If LOG is not a reference, it is assumed to be
+a filename to be opened for output.  You can supply a filename in the
+form of the second argument to C<open>, i.e. with C<'E<gt>'> or
+C<'E<gt>E<gt>'> already prepended.  If you just supply a bare filename,
+C<backgroundify> will either clobber or append, depending on the value
+of the C<$Clobber> global.  C<backgroundify> will then redirect
+C<STDOUT> and C<STDERR> both to this file.  PROGRAM and ARGS are the
+same as for C<self_annouce>; in fact, they are passed to
+C<self_announce> after redirecting C<STDOUT> and C<STDERR> so that your
+program will describe its execution in its own log file.  (Thus, it's
+never necessary to call both C<self_announce> and C<backgroundify> in
+the same run of a program.)
 
 After redirecting, C<backgroundify> unbuffers both C<STDOUT> and
-C<STDERR> (so that messages to both streams will be wind up in the same
+C<STDERR> (so that messages to both streams will wind up in the same
 order as they are output by your program, and also to avoid problems
 with unflushed buffers before forking) and C<fork>s.  If the C<fork>
 fails, the parent C<die>s; otherwise, the parent C<exit>s and the child
 returns 1.
+
+Be careful about calling C<backgroundify> if you have any C<END> blocks
+in your program: the C<END> block will run in both the parent and the
+child, and it will run in the parent concurrently with C<backgroundify>
+returning to your program as the child process.  This would be a bad
+thing if, say, the C<END> block run by the parent cleans up a temporary
+directory used by the child.  C<backgroundify> takes measures to ensure
+that this doesn't happen with the C<END> block supplied by
+F<MNI::Startup> and used for cleanup, but for you're on your own for any
+other C<END> blocks in your program (or any in other modules that you
+might use).
 
 Note that C<backgroundify> is I<not> sufficient for forking off a daemon
 process.  This requires a slightly different flavour of wizardry, which
@@ -728,17 +776,20 @@ sub backgroundify
    # First, figure out what the nature of $log is.  We assume that if it's
    # a reference, it must be a filehandle in some form.  
 
-   if (ref $log eq 'GLOB')              # assume it's a filehandle
+   if (ref $log)                        # probably a filehandle or something
    {
-      carp "backgroundify: \$log should not be \*STDOUT"
-         if $log == \*STDOUT;
+      croak "backgroundify: if supplied, \$log must be an open filehandle " .
+            "or a filename"
+         unless defined fileno ($log);
+      carp "backgroundify: \$log should not be connected to a TTY"
+         if -t fileno ($log);
 
-      $stdout = ">&$$log";
-      print "$ProgramName: redirecting output to $$log " .
+      $stdout = '>&=' . fileno ($log);
+      print "$ProgramName: redirecting output " .
             "and detaching to background\n"
          if $Verbose;
    }
-   elsif ($log && !ref $log)            # assume it's a filename
+   elsif ($log)                         # assume it's a filename
    {
       if ($log =~ /^>/)                 # user already supplied clobber 
          { $stdout = $log }             # or append notation
@@ -787,18 +838,20 @@ sub backgroundify
 
    if ($pid)                            # in the parent (old process)?
    {
-      @options{'cputimes','cleanup'} = 0; # disable normal shutdown sequence
+      @options{'cputimes','cleanup'} = (); # disable normal shutdown sequence
       open (STDOUT, ">&SAVE_STDOUT") || die "couldn't restore STDOUT: $!\n";
       open (STDERR, ">&SAVE_STDERR") || die "couldn't restore STDERR: $!\n";
       exit;                             # and exit
    }
 
+   # Now, we're in the child (new process) -- reset the "time used"
+   # counters, start a new process group (to emulate what the shells do
+   # when forking a child), print "self announcement" to (redirected)
+   # stdout, and carry on as usual
+
    @start_times = times
       if ($options{'cputimes'});
-
-   # Now, we're in the child (new process) -- print "self announcement" to
-   # (redirected) stdout, and carry on as usual
-
+   setpgrp;
    self_announce (\*STDOUT, $program, $args); # this will go to the log file!
 
    return 1;                            # return OK in new process
