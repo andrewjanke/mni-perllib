@@ -12,7 +12,7 @@
 #@REQUIRES   : Exporter
 #@CREATED    : 1997/08/07, Greg Ward (from minc_utilities.pl, revision 1.16)
 #@MODIFIED   : 
-#@VERSION    : $Id: MincUtilities.pm,v 1.3 1997-08-18 21:16:11 greg Exp $
+#@VERSION    : $Id: MincUtilities.pm,v 1.4 1997-08-28 01:45:31 greg Exp $
 #@COPYRIGHT  : Copyright (c) 1997 by Gregory P. Ward, McConnell Brain Imaging
 #              Centre, Montreal Neurological Institute, McGill University.
 #
@@ -110,7 +110,7 @@ data in it, and to get/put/update its history.  The common thread is that
 everything (well, almost everything) is done via external utilities, such
 as C<mincinfo> or C<volume_stats>.  Note that some of these utilities are
 distributed with the MINC package, so if you have the MINC library
-installed you should have the libraries; other utilities are distributed
+installed you should have the utilities; other utilities are distributed
 with other packages (such as C<volume_cog>, included with the MNI AutoReg
 package); and other utilities (such as C<volume_stats>) may not be
 available outside the MNI.  Unfortunately, there's currently no way to know
@@ -120,7 +120,7 @@ F<MNI::MincUtilities> and your program crashes.
 Eventually, this module will (hopefully) be superseded by the F<MNI::MINC>
 family of modules, but since those modules don't exist as of this writing,
 F<MNI::MincUtilities> is being provided as a stop-gap measure.  It is
-intended that this will solve the problem of reliance on possible
+intended that this will solve the problem of reliance on possibly
 unavailable external programs.
 
 The subroutines provided by F<MNI::MincUtilities> fall into roughly five
