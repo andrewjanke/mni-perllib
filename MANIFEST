@@ -19,6 +19,7 @@ t/compare.pl
 t/testvol.mnc
 t/datadir.t.in
 t/toy_ls.in
+MNI/Batch.pm
 MNI/FileUtilities.pm
 MNI/MiscUtilities.pm
 MNI/PathUtilities.pm
