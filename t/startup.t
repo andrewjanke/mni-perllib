@@ -229,6 +229,31 @@ SCRIPT
 
 if (1)
 {
+   announce 'non-cleanup of custom temp directory';
+   ($status,$out,$err) = fork_script (<<'SCRIPT');
+use MNI::Startup;
+
+$TmpDir = "temp";
+print "TmpDir = $TmpDir\n";
+mkdir ($TmpDir, 0755) || die "couldn't create $TmpDir: $!\n"
+   unless -d $TmpDir;
+system "cp t/*.t $TmpDir";
+die "cp failed\n" if $?;
+SCRIPT
+
+   test ($status == 0 &&
+         (shift @$out) eq "** BEGIN TEST" &&
+         @$out == 3 &&
+         (($tmpdir) = $out->[0] =~ /TmpDir = (.*)/) &&
+         -d $tmpdir &&
+         `cd $tmpdir ; ls *` eq `cd t ; ls *.t` &&
+         @$err == 0);
+   system 'rm', '-rf', $tmpdir;
+   warn "rm -rf $tmpdir failed\n" if $?;
+}
+
+if (1)
+{
    announce 'suppress cleanup (via nocleanup)';
    ($status,$out,$err) = fork_script (<<'SCRIPT');
 use MNI::Startup qw(nocleanup);
@@ -278,7 +303,7 @@ SCRIPT
 
 if (1)
 {
-   announce 'suppress cleanup (via $TmpDir undefined)';
+   announce 'cleanup (despite $TmpDir undefined)';
    ($status,$out,$err) = fork_script (<<'SCRIPT');
 use MNI::Startup;
 
@@ -294,8 +319,7 @@ SCRIPT
          (shift @$out) eq "** BEGIN TEST" &&
          @$out == 3 &&
          (($tmpdir) = $out->[0] =~ /TmpDir = (.*)/) &&
-         -d $tmpdir &&
-         `cd $tmpdir ; ls *` eq `cd t ; ls *.t` &&
+         ! -e $tmpdir &&
          @$err == 0);
    system 'rm', '-rf', $tmpdir;
    warn "rm -rf $tmpdir failed\n" if $?;
