@@ -14,8 +14,8 @@ my $i = 0;
 sub test { printf "%s %d\n", ($_[0] ? "ok" : "not ok"), ++$i; }
 sub announce { printf "test %d: %s\n", $i+1, $_[0] if $DEBUG }
 
-die "/bin/ls not found (or not executable)\n"
-   unless -x "/bin/ls";
+die "t/toy_ls not found (or not executable)\n"
+   unless -x "t/toy_ls";
 
 print "1..53\n";
 
@@ -27,39 +27,21 @@ map { $_ = "$cwd/$_" unless m|^/|; } @INC; # so autoload will work after chdir
 @sigs = qw(INT TERM QUIT HUP PIPE);
 @SIG{@sigs} = map (\&cleanup, @sigs);
 
-# change this to default to 0 eventually!
 $DEBUG = exists $ENV{'SPAWN_TEST_DEBUG'} ? $ENV{'SPAWN_TEST_DEBUG'} : 0;
-
-# try to figure out what "ls" prints when you ls a non-existent file
 
 $errfile = "$tmp_dir/err";
 $outfile = "$tmp_dir/out";
 
-system "ls askdj 2> $errfile";
-$ls_error = $?;
-if ($ls_error == 0)
-{
-   warn "spawn.t: warning: your 'ls' command is brain-damaged; \n" .
-        "can't adequately test spawn's error detection\n";
-}
-
-@err = file_contents ($errfile);
-die "expected exactly one line on stderr from \"ls askdj\"\n" 
-   unless @err == 1;
-MSG:
-{
-   ($err_msg = "no such file", last MSG) if $err[0] =~ /no such file/i;
-   ($err_msg = "not found", last MSG) if $err[0] =~ /not found/i;
-   die "I don't recognize what \"ls\" prints for a non-existent file\n";
-}
-unlink ($errfile) || die "couldn't unlink $errfile: $!\n";
+# This seems to be fairly standard -- it's just what toy_ls prints
+# when its `stat' fails because a file isn't found.
+$err_msg = "No such file or directory";
 
 
 # create spawning vat w/ a couple of options
 my $spawner = new MNI::Spawn (verbose => 0);
 $spawner->set_options (execute => 1, 
                        strict => 0,
-                       search_path => [qw(/bin /usr/bin)]);
+                       search_path => '.:t');
 announce "object creation and option setting";
 test (defined $spawner->{verbose} && 
       ! $spawner->{verbose} &&
@@ -69,7 +51,7 @@ test (defined $spawner->{verbose} &&
 if (1)
 {
    announce "basic spawn";
-   test ($spawner->spawn ("ls > /dev/null") == 0);
+   test ($spawner->spawn ("toy_ls > /dev/null") == 0);
 }
 
 
@@ -103,16 +85,22 @@ if (1)
 
 chdir "t" || die "couldn't chdir into t: $!\n";
 opendir (TDIR, ".") || die "couldn't opendir .: $!\n";
-@files = sort grep (-f, readdir (TDIR));
+@files = sort grep (! /^\./, readdir (TDIR));
 @t_files = grep (/\.t$/, @files);
 closedir (TDIR);
+
+if ($DEBUG)
+{
+   print "files:\n  " . join ("\n  ", @files) . "\n";
+   print "t_files:\n  " . join ("\n  ", @t_files) . "\n";
+}
 
 # OK, now some simple tests with spawn; first, just execute a command
 if (1)
 {
    announce "basic spawn (string)";
    ($status,$out,$err) = fork_test 
-      (sub { $spawner->spawn ("ls") }, 0);
+      (sub { $spawner->spawn ("toy_ls") }, 0);
    test ($status == 0 && 
          (shift @$out) eq "** BEGIN TEST" &&
          (pop @$out) eq "** END TEST" &&
@@ -125,7 +113,7 @@ if (1)
 {
    announce "basic spawn (with strictness)";
    ($status,$out,$err) = fork_test 
-      (sub { $spawner->spawn ("ls", strict => 1) }, 0);
+      (sub { $spawner->spawn ("toy_ls", strict => 1) }, 0);
    test ($status == 0 && 
          (shift @$out) eq "** BEGIN TEST" &&
          (pop @$out) eq "** END TEST" &&
@@ -140,7 +128,7 @@ if (1)
 {
    announce "spawn (string): argument for shell to expand";
    ($status,$out,$err) = fork_test 
-      (sub { $spawner->spawn ("ls *.t") }, 0);
+      (sub { $spawner->spawn ("toy_ls *.t") }, 0);
    test ($status == 0 && 
          (shift @$out) eq "** BEGIN TEST" &&
          (pop @$out) eq "** END TEST" &&
@@ -160,7 +148,7 @@ if (1)
    $Verbose = 1;
    ($status,$out,$err) = fork_test 
       (sub {
-          $spawner->spawn ("ls") && die "spawn failed\n";
+          $spawner->spawn ("toy_ls") && die "spawn failed\n";
           die "verbose not set\n" unless $spawner->{verbose};
        }, 1);
    test (@$out == @files+3 && 
@@ -171,7 +159,7 @@ if (1)
    $Verbose = 0;
    ($status,$out,$err) = fork_test 
       (sub {
-          $spawner->spawn ("ls") && die "spawn failed\n";
+          $spawner->spawn ("toy_ls") && die "spawn failed\n";
           die "verbose not defined-but-false\n" 
              unless defined $spawner->{verbose} && !$spawner->{verbose};
        }, 1);
@@ -185,10 +173,10 @@ if (1)
 {
    announce "spawn (string) with verbosity";
    ($status,$out,$err) = fork_test 
-      (sub { $spawner->spawn ("ls") }, 0);
+      (sub { $spawner->spawn ("toy_ls") }, 0);
    test ($status == 0 && 
          (shift @$out) eq "** BEGIN TEST" &&
-         (shift @$out) =~ m|^\[$ProgramName\] \[.+\@.+\:.+\] \[[\d-]+ [\d:]+\] /bin/ls$| &&
+         (shift @$out) =~ m|^\[$ProgramName\] \[.+\@.+\:.+\] \[[\d-]+ [\d:]+\] ./toy_ls$| &&
          (pop @$out) eq "** END TEST" &&
          @$out == @files &&
          slist_equal ($out, \@files) &&
@@ -200,10 +188,10 @@ if (1)
 {
    announce "spawn (list) with verbosity";
    ($status,$out,$err) = fork_test 
-      (sub { $spawner->spawn (["ls"]) }, 0);
+      (sub { $spawner->spawn (["toy_ls"]) }, 0);
    test ($status == 0 && 
          (shift @$out) eq "** BEGIN TEST" &&
-         (shift @$out) =~ /^\[$ProgramName\] \[.+\@.+\:.+\] \[[\d-]+ [\d:]+\] .*\/ls$/ &&
+         (shift @$out) =~ m|^\[$ProgramName\] \[.+\@.+\:.+\] \[[\d-]+ [\d:]+\] ./toy_ls$| &&
          (pop @$out) eq "** END TEST" &&
          @$out == @files &&
          slist_equal ($out, \@files) &&
@@ -215,10 +203,10 @@ if (1)
 {
    announce "spawn (list) with args";
    ($status,$out,$err) = fork_test 
-      (sub { $spawner->spawn (["ls", @t_files]) }, 0);
+      (sub { $spawner->spawn (["toy_ls", @t_files]) }, 0);
    test ($status == 0 && 
          (shift @$out) eq "** BEGIN TEST" &&
-         (shift @$out) =~ /^\[$ProgramName\] \[.+\@.+\:.+\] \[[\d-]+ [\d:]+\] .*\/ls @t_files/ &&
+         (shift @$out) =~ m|^\[$ProgramName\] \[.+\@.+\:.+\] \[[\d-]+ [\d:]+\] ./toy_ls @t_files| &&
          (pop @$out) eq "** END TEST" &&
          @$out == @t_files &&
          slist_equal ($out, \@t_files) &&
@@ -241,7 +229,7 @@ if (1)
    ($status,$out,$err) = fork_test 
       (sub
        {
-          $spawner->spawn (["ls", $files[0], "sldjfghf"],
+          $spawner->spawn (["toy_ls", $files[0], "sldjfghf"],
                            err_action => 'warn');
           die "bad err_action\n"
              unless $spawner->{err_action} eq 'fatal';
@@ -252,7 +240,7 @@ if (1)
          @$out == 1 && $out->[0] eq $files[0] &&
          @$err == 2 && 
          $err->[0] =~ /$err_msg/i &&
-         $err->[1] =~ /ls crashed/);
+         $err->[1] =~ /toy_ls crashed/);
 }
 
 # Same error, but this time with the default err_action (which should be
@@ -263,14 +251,14 @@ if (1)
    ($status,$out,$err) = fork_test 
       (sub
        {
-          $spawner->spawn (["ls", $files[0], "sldjfghf"]);
+          $spawner->spawn (["toy_ls", $files[0], "sldjfghf"]);
        }, 1);
    test ($status != 0 &&                # non-zero only if spawn die's
          (shift @$out) eq "** BEGIN TEST" &&
          @$out == 1 && $out->[0] eq $files[0] &&
          @$err == 2 && 
          $err->[0] =~ /$err_msg/i &&
-         $err->[1] =~ /crashed while running ls/);
+         $err->[1] =~ /crashed while running toy_ls/);
 }
 
 # And again, but this time have spawn not report the error
@@ -280,7 +268,7 @@ if (1)
    ($status,$out,$err) = fork_test 
       (sub
        {
-          $spawner->spawn (["ls", $files[0], "sldjfghf"],
+          $spawner->spawn (["toy_ls", $files[0], "sldjfghf"],
                            err_action => 'ignore') && return 1;
           die "bad copy!" unless $spawner->{err_action} eq '';
           return 0;
@@ -300,7 +288,7 @@ if (1)
 {
    announce "spawn (string): shell redirect";
    ($status,$out,$err) = fork_test 
-      (sub { $spawner->spawn ("ls $files[0] > $outfile") },
+      (sub { $spawner->spawn ("toy_ls $files[0] > $outfile") },
        0);
    @outfile = file_contents ($outfile);
    test ($status == 0 &&
@@ -318,7 +306,7 @@ if (1)
    ($status,$out,$err) = fork_test 
       (sub
        { 
-          $spawner->spawn ("ls $files[0]", stdout => $outfile) && return 1;
+          $spawner->spawn ("toy_ls $files[0]", stdout => $outfile) && return 1;
           die "bad copy!" 
              unless exists $spawner->{stdout} && ! defined $spawner->{stdout};
           return 0;
@@ -336,7 +324,7 @@ if (1)
 {
    announce "spawn (list): spawn redirect";
    ($status,$out,$err) = fork_test 
-      (sub { $spawner->spawn (["ls", $files[0]], stdout => $outfile) },
+      (sub { $spawner->spawn (["toy_ls", $files[0]], stdout => $outfile) },
        0);
    test ($status == 0 &&
          (shift @$out) eq "** BEGIN TEST" &&
@@ -353,7 +341,7 @@ if (1)
 {
    announce "spawn (list): spawn redirect with merged error";
    ($status,$out,$err) = fork_test 
-      (sub { $spawner->spawn (["ls", $files[0], "asdf"], 
+      (sub { $spawner->spawn (["toy_ls", $files[0], "asdf"], 
                               stdout => $outfile) },
        1);
 
@@ -364,7 +352,7 @@ if (1)
          (pop @$out) eq "** END TEST" &&
          @$out == 0 &&
          @$err == 1 && 
-         $err->[0] =~ /ls crashed/ &&
+         $err->[0] =~ /toy_ls crashed/ &&
          (shift @outfile) =~ /$err_msg/i &&
          slist_equal (\@outfile, [$files[0]]));
    unlink ($outfile) || warn "couldn't unlink $outfile: $!\n";
@@ -377,7 +365,7 @@ if (1)
 {
    announce "spawn (list): spawn redirect with untouched error";
    ($status,$out,$err) = fork_test 
-      (sub { $spawner->spawn (["ls", $files[0], "asdf"], 
+      (sub { $spawner->spawn (["toy_ls", $files[0], "asdf"], 
                               stdout => $outfile,
                               stderr => UNTOUCHED) },
        1);
@@ -391,7 +379,7 @@ if (1)
          @$out == 0 &&
          @$err == 2 && 
          $err->[0] =~ /$err_msg/i &&
-         $err->[1] =~ /ls crashed/ &&
+         $err->[1] =~ /toy_ls crashed/ &&
          slist_equal (\@outfile, [$files[0]]));
    unlink ($outfile) || warn "couldn't unlink $outfile: $!\n";
 }
@@ -401,7 +389,7 @@ if (1)
 {
    announce "spawn (list): spawn with redirected error";
    ($status,$out,$err) = fork_test 
-      (sub { $spawner->spawn (["ls", $files[0], "asdf"], 
+      (sub { $spawner->spawn (["toy_ls", $files[0], "asdf"], 
                               stderr => $errfile) },
        1);
 
@@ -412,7 +400,7 @@ if (1)
          @$out == 1 &&
          $out->[0] eq $files[0] &&
          @$err == 1 && 
-         $err->[0] =~ /ls crashed/ &&
+         $err->[0] =~ /toy_ls crashed/ &&
          @err == 1 &&
          $err[0] =~ /$err_msg/i);
    unlink ($errfile) || warn "couldn't unlink $errfile: $!\n";
@@ -423,7 +411,7 @@ if (1)
 {
    announce "spawn (list): spawn with separately redirected stdout and stderr";
    ($status,$out,$err) = fork_test 
-      (sub { $spawner->spawn (["ls", $files[0], "asdf"], 
+      (sub { $spawner->spawn (["toy_ls", $files[0], "asdf"], 
                               stdout => $outfile,
                               stderr => $errfile) },
        1);
@@ -438,7 +426,7 @@ if (1)
          @out == 1 &&
          $out[0] eq $files[0] &&
          @$err == 1 &&
-         $err->[0] =~ /ls crashed/ &&
+         $err->[0] =~ /toy_ls crashed/ &&
          @err == 1 &&
          $err[0] =~ /$err_msg/i);
    unlink ($errfile) || warn "couldn't unlink $errfile: $!\n";
@@ -452,7 +440,7 @@ if (1)
       (sub
        { 
           my $cap_out;
-          $spawner->spawn (["ls", $files[0], "asdf"], 
+          $spawner->spawn (["toy_ls", $files[0], "asdf"], 
                            stdout => \$cap_out);
           chomp $cap_out;
           print "captured stdout = >$cap_out<\n";
@@ -466,7 +454,7 @@ if (1)
          $out->[0] eq "captured stdout = >$files[0]<" &&
          @$err == 2 &&
          $err->[0] =~ /$err_msg/i &&
-         $err->[1] =~ /ls crashed/);
+         $err->[1] =~ /toy_ls crashed/);
 }
 
 # Capture stdout and stderr separately
@@ -477,7 +465,7 @@ if (1)
       (sub
        { 
           my ($cap_out, $cap_err);
-          $spawner->spawn (["ls", @files[0..2], "asdf"], 
+          $spawner->spawn (["toy_ls", @files[0..2], "asdf"], 
                            stdout => \$cap_out,
                            stderr => \$cap_err);
           chomp $cap_out; chomp $cap_err;
@@ -495,7 +483,7 @@ if (1)
          $out->[4] eq "captured stderr:" &&
          $out->[5] =~ /$err_msg/i &&
          @$err == 1 &&
-         $err->[0] =~ /ls crashed/);
+         $err->[0] =~ /toy_ls crashed/);
 }
 
 # Same, but capture to array variables
@@ -506,7 +494,7 @@ if (1)
       (sub
        { 
           my ($cap_out, $cap_err);
-          $spawner->spawn (["ls", @files[0..2], "asdf"], 
+          $spawner->spawn (["toy_ls", @files[0..2], "asdf"], 
                            stdout => \@cap_out,
                            stderr => \@cap_err);
           print "captured stdout:\n" . join ("\n", @cap_out) . "\n";
@@ -523,50 +511,49 @@ if (1)
          $out->[4] eq "captured stderr:" &&
          $out->[5] =~ /$err_msg/i &&
          @$err == 1 &&
-         $err->[0] =~ /ls crashed/);
+         $err->[0] =~ /toy_ls crashed/);
 }
 
 $spawner->set_options (err_action => 'fatal');
 
 # Fiddle around with command completion features (searching and option
 # adding); first make sure that 1) we get a warning when `strict' is 1 and
-# 2) searching turns 'ls' into '/bin/ls'
+# 2) searching turns 'toy_ls' into './toy_ls'
 
 $spawner->set_options (verbose => 1);
 if (1)
 {
    announce "spawn: strictness and path search";
-#   $spawner->spawn ("ls", strict => 1);
+#   $spawner->spawn ("toy_ls", strict => 1);
    ($status,$out,$err) = fork_test 
-      (sub { $spawner->spawn ("ls", strict => 1) },
+      (sub { $spawner->spawn ("toy_ls", strict => 1) },
        0);
 
    test ($status == 0 &&
          (shift @$out) eq "** BEGIN TEST" &&
          (pop @$out) eq "** END TEST" &&
-         (shift @$out) =~ m|\] /bin/ls$| &&
+         (shift @$out) =~ m|\] ./toy_ls$| &&
          @$out == @files &&
          slist_equal ($out, \@files) &&
          @$err == 1 &&
-         $err->[0] =~ /program \"ls\" not registered/);
+         $err->[0] =~ /program \"toy_ls\" not registered/);
 }
 
-# Now let's set a default option for "ls", and make sure it has the
+# Now let's set a default option for "toy_ls", and make sure it has the
 # expected effect.
 
-$spawner->add_default_args ('ls', ['-s']);
+$spawner->add_default_args ('toy_ls', ['-s']);
 if (1)
 {
    announce "spawn (string): default arguments (pre only)";
-#   $spawner->spawn (["ls"]);
-    ($status,$out,$err) = fork_test (sub { $spawner->spawn ("ls") }, 0);
+#   $spawner->spawn (["toy_ls"]);
+    ($status,$out,$err) = fork_test (sub { $spawner->spawn ("toy_ls") }, 0);
 
-   test (slist_equal ($spawner->{defargs}{pre}{ls}, ['-s']) &&
+   test (slist_equal ($spawner->{defargs}{pre}{toy_ls}, ['-s']) &&
          $status == 0 &&
          (shift @$out) eq "** BEGIN TEST" &&
          (pop @$out) eq "** END TEST" &&
-         (shift @$out) =~ m|\] /bin/ls -s$| &&
-         (shift @$out) =~ m|^total\s*\d+| &&
+         (shift @$out) =~ m|\] ./toy_ls -s$| &&
          @$out == @files &&
          (grep (s/^\s*\d+\s*//, @$out) == @$out) &&
          slist_equal ($out, \@files) &&
@@ -582,8 +569,8 @@ if (1)
       (sub
        {
           $spawner->set_options (strict => 1);
-          $spawner->add_default_args ('ls', ['-s']);
-          $spawner->clear_default_args ('ls');
+          $spawner->add_default_args ('toy_ls', ['-s']);
+          $spawner->clear_default_args ('toy_ls');
        }, 0);
 
    test ($status == 0 &&
@@ -602,51 +589,51 @@ if (1)
 
 if (1)
 {
-   $spawner->add_default_args ('ls', '-lt', 'pre');
-   test (slist_equal ($spawner->{defargs}{pre}{ls}, ['-s', '-lt']) &&
-         ! defined $spawner->{defargs}{post}{ls});
+   $spawner->add_default_args ('toy_ls', '-lt', 'pre');
+   test (slist_equal ($spawner->{defargs}{pre}{toy_ls}, ['-s', '-lt']) &&
+         ! defined $spawner->{defargs}{post}{toy_ls});
 
-   $spawner->add_default_args ('ls', ['*.foo'], 'post');
-   test (slist_equal ($spawner->{defargs}{pre}{ls}, ['-s', '-lt']) &&
-         slist_equal ($spawner->{defargs}{post}{ls}, ['*.foo']));
+   $spawner->add_default_args ('toy_ls', ['*.foo'], 'post');
+   test (slist_equal ($spawner->{defargs}{pre}{toy_ls}, ['-s', '-lt']) &&
+         slist_equal ($spawner->{defargs}{post}{toy_ls}, ['*.foo']));
 
-   $spawner->clear_default_args ('ls', 'post');
-   test (slist_equal ($spawner->{defargs}{pre}{ls}, ['-s', '-lt']) &&
-         ! defined $spawner->{defargs}{post}{ls});
+   $spawner->clear_default_args ('toy_ls', 'post');
+   test (slist_equal ($spawner->{defargs}{pre}{toy_ls}, ['-s', '-lt']) &&
+         ! defined $spawner->{defargs}{post}{toy_ls});
 
-   $spawner->add_default_args ('ls', ['*.foo', 'bar.*'], 'post');
-   $spawner->clear_default_args ('ls', 'pre');
-   test (! defined $spawner->{defargs}{pre}{ls} &&
-         slist_equal ($spawner->{defargs}{post}{ls}, ['*.foo', 'bar.*']));
+   $spawner->add_default_args ('toy_ls', ['*.foo', 'bar.*'], 'post');
+   $spawner->clear_default_args ('toy_ls', 'pre');
+   test (! defined $spawner->{defargs}{pre}{toy_ls} &&
+         slist_equal ($spawner->{defargs}{post}{toy_ls}, ['*.foo', 'bar.*']));
 
-   $spawner->add_default_args ('ls', ['-alF', '-zonk']);
-   $spawner->add_default_args ('ls', 'zap', 'post');
-   test (slist_equal ($spawner->{defargs}{pre}{ls}, ['-alF', '-zonk']) &&
-         slist_equal ($spawner->{defargs}{post}{ls}, ['*.foo', 'bar.*', 'zap']));
-   $spawner->clear_default_args ('ls');
-   test (! defined $spawner->{defargs}{pre}{ls} &&
-         ! defined $spawner->{defargs}{post}{ls});
+   $spawner->add_default_args ('toy_ls', ['-alF', '-zonk']);
+   $spawner->add_default_args ('toy_ls', 'zap', 'post');
+   test (slist_equal ($spawner->{defargs}{pre}{toy_ls}, ['-alF', '-zonk']) &&
+         slist_equal ($spawner->{defargs}{post}{toy_ls}, ['*.foo', 'bar.*', 'zap']));
+   $spawner->clear_default_args ('toy_ls');
+   test (! defined $spawner->{defargs}{pre}{toy_ls} &&
+         ! defined $spawner->{defargs}{post}{toy_ls});
 
-   $spawner->add_default_args ('ls', ['-alF', '-zonk']);
-   $spawner->add_default_args ('ls', ['foo', 'bar', 'baz'], 'post');
-   $spawner->clear_default_args ('ls', 'both');
-   test (! defined $spawner->{defargs}{pre}{ls} &&
-         ! defined $spawner->{defargs}{post}{ls});
+   $spawner->add_default_args ('toy_ls', ['-alF', '-zonk']);
+   $spawner->add_default_args ('toy_ls', ['foo', 'bar', 'baz'], 'post');
+   $spawner->clear_default_args ('toy_ls', 'both');
+   test (! defined $spawner->{defargs}{pre}{toy_ls} &&
+         ! defined $spawner->{defargs}{post}{toy_ls});
 }
 
 # Now a test with both "pre" and "post" default args
-$spawner->clear_default_args ('ls', 'both');
-$spawner->add_default_args ('ls', ['-s'], 'pre');
-$spawner->add_default_args ('ls', ['*.t'], 'post');
+$spawner->clear_default_args ('toy_ls', 'both');
+$spawner->add_default_args ('toy_ls', ['-s'], 'pre');
+$spawner->add_default_args ('toy_ls', ['*.t'], 'post');
 if (1)
 {
    announce "spawn (string): default arguments (pre and post both)";
-   ($status,$out,$err) = fork_test (sub { $spawner->spawn ("ls") }, 0);
+   ($status,$out,$err) = fork_test (sub { $spawner->spawn ("toy_ls") }, 0);
 
    test ($status == 0 &&
          (shift @$out) eq "** BEGIN TEST" &&
          (pop @$out) eq "** END TEST" &&
-         (shift @$out) =~ m|\] /bin/ls -s \*\.t$| &&
+         (shift @$out) =~ m|\] ./toy_ls -s \*\.t$| &&
          @$out == @t_files &&
          (grep (s/^\s*\d+\s*//, @$out) == @$out) &&
          slist_equal ($out, \@t_files) &&
@@ -655,17 +642,17 @@ if (1)
 }
 
 # Same, but with command-as-list
-$spawner->clear_default_args ('ls', 'post');
-$spawner->add_default_args ('ls', [@t_files], 'post');
+$spawner->clear_default_args ('toy_ls', 'post');
+$spawner->add_default_args ('toy_ls', [@t_files], 'post');
 if (1)
 {
    announce "spawn (list): default arguments (pre and post both)";
-   ($status,$out,$err) = fork_test (sub { $spawner->spawn (["ls"]) }, 0);
+   ($status,$out,$err) = fork_test (sub { $spawner->spawn (["toy_ls"]) }, 0);
 
    test ($status == 0 &&
          (shift @$out) eq "** BEGIN TEST" &&
          (pop @$out) eq "** END TEST" &&
-         (shift @$out) =~ m|\] /bin/ls -s (.*\.t)+$| &&
+         (shift @$out) =~ m|\] ./toy_ls -s (.*\.t)+$| &&
          @$out == @t_files &&
          (grep (s/^\s*\d+\s*//, @$out) == @$out) &&
          slist_equal ($out, \@t_files) &&
@@ -679,13 +666,13 @@ if (1)
    announce "spawn (list): default arguments in place but disabled";
    ($status,$out,$err) = fork_test 
       (sub {
-         $spawner->spawn (["ls"], add_defaults => 0) 
+         $spawner->spawn (["toy_ls"], add_defaults => 0) 
       }, 0);
 
    test ($status == 0 &&
          (shift @$out) eq "** BEGIN TEST" &&
          (pop @$out) eq "** END TEST" &&
-         (shift @$out) =~ m|\] /bin/ls$| &&
+         (shift @$out) =~ m|\] ./toy_ls$| &&
          slist_equal ($out, \@files) &&
          @$err == 0);
 }
@@ -696,13 +683,13 @@ if (1)
    announce "spawn (list): default args enabled, but searching disabled";
    ($status,$out,$err) = fork_test 
       (sub {
-         $spawner->spawn (["ls"], search => 0) 
+         $spawner->spawn (["toy_ls"], search => 0) 
       }, 0);
 
    test ($status == 0 &&
          (shift @$out) eq "** BEGIN TEST" &&
          (pop @$out) eq "** END TEST" &&
-         (shift @$out) =~ m|\] ls -s (.*\.t)+$| &&
+         (shift @$out) =~ m|\] toy_ls -s (.*\.t)+$| &&
          @$out == @t_files &&
          (grep (s/^\s*\d+\s*//, @$out) == @$out) &&
          slist_equal ($out, \@t_files) &&
@@ -716,13 +703,13 @@ if (1)
    announce "spawn (list): all command completion disabled";
    ($status,$out,$err) = fork_test 
       (sub {
-         $spawner->spawn (["ls"], complete => 0) 
+         $spawner->spawn (["toy_ls"], complete => 0) 
       }, 0);
 
    test ($status == 0 &&
          (shift @$out) eq "** BEGIN TEST" &&
          (pop @$out) eq "** END TEST" &&
-         (shift @$out) =~ m|\] ls$| &&
+         (shift @$out) =~ m|\] toy_ls$| &&
          slist_equal ($out, \@files) &&
          @$err == 0);
 }
@@ -732,12 +719,12 @@ if (1)
 if (1)
 {
    announce "spawn (list): command completion disabled with backslash";
-   ($status,$out,$err) = fork_test (sub { $spawner->spawn (['\ls']) }, 0);
+   ($status,$out,$err) = fork_test (sub { $spawner->spawn (['\toy_ls']) }, 0);
 
    test ($status == 0 &&
          (shift @$out) eq "** BEGIN TEST" &&
          (pop @$out) eq "** END TEST" &&
-         (shift @$out) =~ m|\] ls$| &&
+         (shift @$out) =~ m|\] toy_ls$| &&
          slist_equal ($out, \@files) &&
          @$err == 1 &&
          $err->[0] =~ /spawn: warning: escaping commands with backslash is deprecated/);
@@ -752,13 +739,13 @@ if (1)
    announce "spawn (string): all command completion disabled";
    ($status,$out,$err) = fork_test 
       (sub {
-         $spawner->spawn ("ls", complete => 0) 
+         $spawner->spawn ("toy_ls", complete => 0) 
       }, 0);
 
    test ($status == 0 &&
          (shift @$out) eq "** BEGIN TEST" &&
          (pop @$out) eq "** END TEST" &&
-         (shift @$out) =~ m|\] ls$| &&
+         (shift @$out) =~ m|\] toy_ls$| &&
          slist_equal ($out, \@files) &&
          @$err == 0);
 }
@@ -769,24 +756,24 @@ if (1)
    announce "spawn (string): all command completion disabled";
    ($status,$out,$err) = fork_test 
       (sub {
-         $spawner->spawn ('\ls') 
+         $spawner->spawn ('\toy_ls') 
       }, 0);
 
    test ($status == 0 &&
          (shift @$out) eq "** BEGIN TEST" &&
          (pop @$out) eq "** END TEST" &&
-         (shift @$out) =~ m|\] ls$| &&
+         (shift @$out) =~ m|\] toy_ls$| &&
          slist_equal ($out, \@files) &&
          @$err == 1 &&
          $err->[0] =~ /spawn: warning: escaping commands with backslash is deprecated/);
 }
 
-$spawner->clear_default_args ('ls');
+$spawner->clear_default_args ('toy_ls');
 
 open (LS, ">ls") || die "couldn't create \"ls\": $!\n";
 print LS <<END;
 #!/bin/sh
-/bin/ls \$*
+./toy_ls \$*
 END
 close (LS);
 chmod (0755, "ls") || die "couldn't chmod \"ls\": $!\n";
@@ -906,10 +893,10 @@ if (1)
    ($status,$out,$err) = fork_test 
       (sub
        {
-          $spawner->register_programs (['ls']);
+          $spawner->register_programs (['toy_ls']);
           die "unexpected result of register_programs\n" 
-             unless $spawner->{programs}{'ls'} eq '/bin/ls';
-          $spawner->spawn ("ls $files[0]")
+             unless $spawner->{programs}{'toy_ls'} eq './toy_ls';
+          $spawner->spawn ("toy_ls $files[0]")
              && die "spawn failed";
           return 0;
        }, 0);
@@ -918,7 +905,7 @@ if (1)
          (shift @$out) eq "** BEGIN TEST" &&
          (pop @$out) eq "** END TEST" &&
          @$out == 2 &&
-         $out->[0] =~ m|\] /bin/ls $files[0]$| &&
+         $out->[0] =~ m|\] ./toy_ls $files[0]$| &&
          $out->[1] eq $files[0] &&
          @$err == 0);         
 }
@@ -929,10 +916,10 @@ if (1)
    ($status,$out,$err) = fork_test 
       (sub
        {
-          $spawner->register_programs (['ls']);
+          $spawner->register_programs (['toy_ls']);
           die "unexpected result of register_programs\n" 
-             unless $spawner->{programs}{'ls'} eq '/bin/ls';
-          $spawner->spawn (['ls', $files[0]])
+             unless $spawner->{programs}{'toy_ls'} eq './toy_ls';
+          $spawner->spawn (['toy_ls', $files[0]])
              && die "spawn failed";
           return 0;
        }, 0);
@@ -941,7 +928,7 @@ if (1)
          (shift @$out) eq "** BEGIN TEST" &&
          (pop @$out) eq "** END TEST" &&
          @$out == 2 &&
-         $out->[0] =~ m|\] /bin/ls $files[0]$| &&
+         $out->[0] =~ m|\] ./toy_ls $files[0]$| &&
          $out->[1] eq $files[0] &&
          @$err == 0);         
 }
