@@ -18,7 +18,7 @@
 #              AutoLoader
 #@CREATED    : 1997/05/13, Greg Ward (from path_utilities.pl, revision 1.10)
 #@MODIFIED   : 
-#@VERSION    : $Id: PathUtilities.pm,v 1.4 1997-07-29 20:20:56 greg Exp $
+#@VERSION    : $Id: PathUtilities.pm,v 1.5 1997-08-13 14:05:20 greg Exp $
 #@COPYRIGHT  : Copyright (c) 1997 by Gregory P. Ward, McConnell Brain Imaging
 #              Centre, Montreal Neurological Institute, McGill University.
 #
@@ -32,12 +32,7 @@ package MNI::PathUtilities;
 use strict;
 use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS);
 
-# I require 5.004 because this module interacts with Perl 5.002 in 
-# a weird way -- it compiles and runs the module successfully, and
-# then just quits.  I have no explanation for this; but it works
-# fine under 5.004.  Go figure.
-
-require 5.004;
+require 5.002;
 require Exporter;
 require AutoLoader;
 
