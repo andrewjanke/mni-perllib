@@ -8,7 +8,7 @@
 #@REQUIRES   : Exporter
 #@CREATED    : 1997/07/25, Greg Ward (from old Startup.pm, rev. 1.23)
 #@MODIFIED   : 
-#@VERSION    : $Id: Startup.pm,v 1.10 1997-09-30 20:37:37 greg Rel $
+#@VERSION    : $Id: Startup.pm,v 1.11 2000-02-21 22:57:54 stever Exp $
 #@COPYRIGHT  : Copyright (c) 1997 by Gregory P. Ward, McConnell Brain Imaging
 #              Centre, Montreal Neurological Institute, McGill University.
 #
@@ -311,9 +311,11 @@ also be propagated to sub-programs that support it.
 
 Specifies where to write temporary files; this is initialized to a
 unique directory constructed from C<$ProgramName> and the process id
-(C<$$>).  This (hopefully) unique name is appended to C<$ENV{'TMPDIR'}>
-(or C<'/usr/tmp'> if the TMPDIR environment variable doesn't exist) to
-make the complete directory.  If C<$ENV{'TMPDIR'}> specifies a relative
+(C<$$>).  This (hopefully) unique name is appended to
+C<$ENV{'TMPDIR'}> to make the complete directory.  If the TMPDIR
+environment variable doesn't exist, then the following directories
+are checked, and the first found is used: C<'/usr/tmp'>, C<'/var/tmp'>,
+and C<'/tmp'>.  If C<$ENV{'TMPDIR'}> specifies a relative
 path, C<$TmpDir> is made into an absolute path by prepending the current
 directory (from C<$StartDir>---this is the "certain obscure
 circumstance" where F<MNI::Startup> ignores the C<startdir> option and
@@ -469,7 +471,18 @@ sub startup
       $Clobber = 0;
       $Debug = 0;
 
-      my ($basetmp) = (defined ($ENV{'TMPDIR'}) ? $ENV{'TMPDIR'} : '/usr/tmp');
+      my $basetmp;
+
+      if (defined($ENV{'TMPDIR'})) {
+	$basetmp = $ENV{'TMPDIR'};
+      } elsif ( -d '/usr/tmp' ) {
+	$basetmp = '/usr/tmp';
+      } elsif ( -d '/var/tmp' ) {
+	$basetmp = '/var/tmp';
+      } elsif ( -d '/tmp' ) {
+	$basetmp = '/tmp';
+      }
+
       $basetmp = $StartDir . $basetmp unless substr ($basetmp, 0, 1) eq '/';
       $basetmp .= '/' unless substr ($basetmp, -1, 1) eq '/';
       $TmpDir = ($basetmp . "${ProgramName}_$$/");

@@ -1,3 +1,8 @@
+2000-02-21  Steve Robbins  <steve@nyongwa.montreal.qc.ca>
+
+	* MNI/Startup.pm (startup): if TMPDIR is not defined, check for /usr/tmp,
+	/var/tmp, and /tmp; use the first directory found for TmpDir.
+
 Sun Jan 16 15:37:54 2000  Steve Robbins  <steve@nyongwa.montreal.qc.ca>
 
 	* MNI.pm: bump VERSION to 0.06.
