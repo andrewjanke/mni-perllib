@@ -14,9 +14,10 @@
 #@EXPORT_TAGS: all
 #@USES       : 
 #@REQUIRES   : Exporter
+#              AutoLoader
 #@CREATED    : 1997/05/13, Greg Ward (from path_utilities.pl, revision 1.10)
 #@MODIFIED   : 
-#@VERSION    : $Id: PathUtilities.pm,v 1.2 1997-05-29 22:30:41 greg Exp $
+#@VERSION    : $Id: PathUtilities.pm,v 1.3 1997-07-10 13:20:14 greg Exp $
 #@COPYRIGHT  : Copyright (c) 1997 by Gregory P. Ward, McConnell Brain Imaging
 #              Centre, Montreal Neurological Institute, McGill University.
 #
@@ -37,6 +38,7 @@ use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS);
 
 require 5.004;
 require Exporter;
+require AutoLoader;
 
 @ISA = qw(Exporter);
 @EXPORT = ();
@@ -47,6 +49,9 @@ require Exporter;
                 merge_paths);
 %EXPORT_TAGS = (all => [@EXPORT_OK]);
 
+*AUTOLOAD = \&AutoLoader::AUTOLOAD;
+
+__END__
 
 =head1 NAME
 
