@@ -17,7 +17,7 @@
 #@REQUIRES   : Exporter
 #@CREATED    : 1997/04/25, Greg Ward (from file_utilities.pl, revision 1.16)
 #@MODIFIED   : 
-#@VERSION    : $Id: FileUtilities.pm,v 1.7 1997-08-13 15:03:57 greg Exp $
+#@VERSION    : $Id: FileUtilities.pm,v 1.8 1997-08-27 20:04:58 greg Rel $
 #@COPYRIGHT  : Copyright (c) 1997 by Gregory P. Ward, McConnell Brain Imaging
 #              Centre, Montreal Neurological Institute, McGill University.
 #
@@ -141,6 +141,8 @@ cumbersome in large programs that use lots of routines, though, so the
 module provides a couple of "export tags" to let you specify subroutines
 by group.  The tags are:
 
+=over 4
+
 =item C<check>
 
 C<check_output_dirs>, C<check_output_path>, C<check_input_dirs>,
@@ -153,6 +155,8 @@ C<search_directories>,  C<find_program>, and C<find_programs>
 =item C<misc>
 
 C<generate_numbered_filename> and C<statfs>
+
+=back
 
 For example, to import the names of all the file/directory checking
 subroutines:
@@ -878,28 +882,28 @@ C<search_directories>:
 
 =over 4
 
-=item
+=item *
 
 can accept the search path either as a reference to a list of
 directories (same as C<search_directories>) or as a colon-separated
 string
 
-=item
+=item *
 
 search path defaults to C<$ENV{'PATH'}> (so you don't actually need that
 search-path-as-string feature very often)
 
-=item
+=item *
 
 prints a warning if PROGRAM was not found (as opposed to
 C<search_directories>, which just returns false and lets you take care
 of informing the user)
 
-=item
+=item *
 
 you can't specify the file test -- it's hard-coded to C<"-f && -x">.
 
-=item
+=item *
 
 C<find_program> returns the complete path of the found program
 (directory plus program name), rather than just the directory where the
