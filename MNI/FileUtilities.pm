@@ -17,7 +17,7 @@
 #@REQUIRES   : Exporter
 #@CREATED    : 1997/04/25, Greg Ward (from file_utilities.pl, revision 1.16)
 #@MODIFIED   : 
-#@VERSION    : $Id: FileUtilities.pm,v 1.2 1997-05-29 22:22:50 greg Exp $
+#@VERSION    : $Id: FileUtilities.pm,v 1.3 1997-07-10 13:17:18 greg Exp $
 #@COPYRIGHT  : Copyright (c) 1997 by Gregory P. Ward, McConnell Brain Imaging
 #              Centre, Montreal Neurological Institute, McGill University.
 #
@@ -40,7 +40,7 @@ use POSIX qw(strftime);
 
 # use MNI::PathUtilities qw(replace_dir);
 
-@ISA = qw(Exporter AutoLoader);
+@ISA = qw(Exporter);
 @EXPORT = ();
 @EXPORT_OK = qw(check_output_dirs
                 check_output_path
@@ -63,6 +63,8 @@ use POSIX qw(strftime);
                               find_programs)],
                 misc   => [qw(generate_numbered_filename
                               statfs)]);
+
+*AUTOLOAD = \&AutoLoader::AUTOLOAD;
 
 __END__                                 # everything after here is autoloaded
 
@@ -940,7 +942,7 @@ sub find_program
    }
 
    $dir = search_directories ($program, \@path, '-f && -x');
-   return "$dir/$program" if $dir;
+   return "$dir$program" if $dir;
    warn "Couldn't find program \"$program\"\n";
    return 0;
 }
