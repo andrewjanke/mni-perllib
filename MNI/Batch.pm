@@ -12,7 +12,7 @@
 #@CREATED    : 95/11/13, Greg Ward
 #@MODIFIED   : 98/11/06, Chris Cocosco: -ported from Batch.pm ... (STILL BETA!)
 #@MODIFIED   : (...see CVS for more history info)
-#@VERSION    : $Id: Batch.pm,v 1.11 1999-12-03 01:27:30 crisco Exp $
+#@VERSION    : $Id: Batch.pm,v 1.12 1999-12-03 02:08:37 crisco Exp $
 #-----------------------------------------------------------------------------
 require 5.002;
 
@@ -188,7 +188,7 @@ my %DefaultOptions = ( verbose          => undef,
 		       export_tmpdir    => '',
 		       nuke_tmpdir      => 0,
 		       synchronize      => '',
-		       syncdir          => "$ENV{'HOME'}/.sync",
+		       syncdir          => ($ENV{'HOME'} || '.') . "/.sync",
 		       close_delay      => 0,
 		       job_name         => undef,
 		       queue            => '',
@@ -549,7 +549,8 @@ END
     }
 
     my $start_syncfile = '';
-    if ($Options{'synchronize'} eq 'start' || $Options{'synchronize'} eq 'both')
+    if ($Options{'synchronize'} eq 'start' || 
+	$Options{'synchronize'} eq 'both')
     {
 	&create_sync_file ("start", $Options{'syncdir'}, $Options{'job_name'},
 			   $ENV{'HOST'}, $JobPID);
@@ -784,15 +785,18 @@ Queues multiple commands to the same job.  If a job is already open, the given
 commands are simply added to it.  If no job is currently open, a new job is
 created, the commands are added, and the job is closed.
 
-In an array context, a list of two filenames is returned: C<(fail,finish)>.
-When the I<check_status> option is turned on, a file is created if B<any> of
-the commands fail.  The name of this file is returned as the first element of
-the array.  If I<check_status> is not enabled, a null string is returned.
-When the I<synchronize> option is set to "finish" or "both", then a file is
-created after the shell commands complete.  The name of this finish file is
-returned as the second element of the array, but only if C<QueueCommands>
-calls C<FinishJob>; i.e. only if there was no job currently active when
-C<QueueCommands> was called.  Otherwise, the empty string is returned.
+In an array context, a list of two filenames is returned:
+C<(fail,finish)>.  Unless the I<synchronize> option is set to "finish"
+or "both", both filenames are empty strings.  When the I<check_status>
+option is also turned on, a file is created if B<any> of the commands
+fail.  The name of this file is returned as the first element of the
+array.  If I<check_status> is not enabled, a null string is returned.
+When the I<synchronize> option is set (to "finish" or "both"), then a
+file is created after the shell commands complete.  The name of this
+finish file is returned as the second element of the array, but only
+if C<QueueCommands> calls C<FinishJob>; i.e. only if there was no job
+currently active when C<QueueCommands> was called.  Otherwise, the
+empty string is returned.
 
 In a scalar context, only the filename of the I<finish> synchronizing file (if
 any) is returned.  This is for backwards-compatibility.  New code should expect
@@ -873,9 +877,12 @@ sub _queue_one_command
 if test \$? -ne 0 ; then
   echo "PROGRAM FAILED: $program" >&2
 END
-	&create_sync_file ("fail", $Options{'syncdir'}, $JobName{$JobPID},
-			   $ENV{'HOST'}, $JobPID);
-	$fail_file = _syncfile_name($JobPID, 'fail');
+        if ($Options{'synchronize'} eq "finish" ||
+	    $Options{'synchronize'} eq "both") {
+	    &create_sync_file ("fail", $Options{'syncdir'}, $JobName{$JobPID},
+			       $ENV{'HOST'}, $JobPID);
+	    $fail_file = _syncfile_name($JobPID, 'fail');
+	}
 	print BATCH <<END;
   exit 1
 fi

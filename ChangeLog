@@ -1,5 +1,13 @@
 1999-12-02  Chris Cocosco  <crisco@bic.mni.mcgill.ca>
 
+	* MNI/Batch.pm: functionality changes! 
+	= 'fail' sync files are now _not_ created unless the "synchronize"
+	option is set to 'finish' or 'both'.
+	= "syncdir" now defaults to './.sync' if 'HOME' is not defined in
+	the environment (which is the case for CGI scripts for example)
+	
+1999-12-02  Chris Cocosco  <crisco@bic.mni.mcgill.ca>
+
 	* MNI/Batch.pm: new option: 'batch_reports'
 	("should the underlying batch process run in verbose mode?")
 	Unless the user explicitly sets it, this option defaults to
