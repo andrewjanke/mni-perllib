@@ -254,6 +254,31 @@ SCRIPT
 
 if (1)
 {
+   announce 'cleanup of relative temp directory';
+   $ENV{'TMPDIR'} = '.';
+   ($status,$out,$err) = fork_script (<<'SCRIPT');
+use MNI::Startup;
+
+print "TmpDir = $TmpDir\n";
+mkdir ($TmpDir, 0755) || die "couldn't create $TmpDir: $!\n"
+   unless -d $TmpDir;
+system "cp t/*.t $TmpDir";
+die "cp failed\n" if $?;
+SCRIPT
+
+   test ($status == 0 &&
+         (shift @$out) eq "** BEGIN TEST" &&
+         @$out == 3 &&
+         (($tmpdir) = $out->[0] =~ /TmpDir = (.*)/) &&
+         $tmpdir =~ m|^/.*/./| &&
+         ! -e $tmpdir &&
+         @$err == 0);
+   system 'rm', '-rf', $tmpdir;
+   warn "rm -rf $tmpdir failed\n" if $?;
+}
+
+if (1)
+{
    announce 'suppress cleanup (via nocleanup)';
    ($status,$out,$err) = fork_script (<<'SCRIPT');
 use MNI::Startup qw(nocleanup);
@@ -662,4 +687,3 @@ SCRIPT
          @$err == 1 &&
          $err->[0] =~ /^died at -e line/i);
 }
-
