@@ -1,12 +1,24 @@
-# ------------------------------ MNI Header ----------------------------------
-#@NAME       : MNI::Tag.pm
-#@DESCRIPTION: Perl interface to the BIC tag files.
-#              This is PRE-Alpha CODE!  Use at your own risk!!
-#@CREATED    : 13 August 1999, Steve M. Robbins
-#-----------------------------------------------------------------------------
-
-
 package MNI::Tag;
+
+=head1 NAME
+
+MNI::Tag - module for accessing MNI tag files
+
+=head1 SYNOPSIS
+
+  use MNI::Tag;
+
+  $in = MNI::Tag->open( "existing.tag" );
+  $out = MNI::Tag->new( filename => "new.tag" );
+
+=head1 DESCRIPTION
+
+=head1 METHODS
+
+=over 4
+
+=cut
+
 
 use strict;
 use Carp;
@@ -19,9 +31,14 @@ my $VOLUMES_STRING = "Volumes";
 my $TAG_POINTS_STRING = "Points";
 
 
-# Constructor that reads an existing tag file
-# Parameter: filename
-#
+=item MNI::Tag::open( filename )
+
+Constructor that reads an existing tag file.  The tag file suffix
+(.tag) is appended to the filename if necessary.  Croaks if the file
+does not exist, or is not a recognizable tag file.
+
+=cut
+
 sub open {
     my( $this, $filename ) = @_;
     my $class = ref($this) || $this;
@@ -41,9 +58,13 @@ sub open {
 }
 
 
-# Copy constructor
-# Parameter: new filename
-#
+=item MNI::Tag::copy( filename )
+
+Copy constructor; must be invoked using a valid MNI::Tag reference.
+Must give a new filename for the copy.
+
+=cut
+
 sub copy {
     my( $that, $filename ) = @_;
     my $class = ref($that);
@@ -66,13 +87,12 @@ sub copy {
 }
 
 
-# Construct a new tag file. 
-# Parameters are a set of key => value pairs.
-#
-# Possible keys:
-#   filename
-#   num_volumes
-#
+=item MNI::Tag::new( option => value ... )
+
+Construct a new tag file.  Possible options: filename, num_volumes.
+
+=cut
+
 sub new {
     my $this = shift;
     my $class = ref($this) || $this;
@@ -95,18 +115,35 @@ sub new {
 }
 
 
+# Don't think we want to expose this to users.
+#
+#=item close
+#
+#  Close the tag file, saving any pending changes.
+#  This is called automatically by the destructor.
+#
+#=cut
+
 sub close { $_[0]->save(); }
 
 sub DESTROY { $_[0]->close(); }
 
 
-# Returns the number of volumes
-#
+=item numberOfVolumes
+
+Returns the number of volumes.
+
+=cut
+
 sub numberOfVolumes { return $_[0]->{num_volumes}; }
 
 
-# Returns the number of tags
-#
+=item numberOfTags
+
+Returns the number of tags.
+
+=cut
+
 sub numberOfTags { return scalar( @{$_[0]->{_volume1}} ); }
 
 
@@ -129,7 +166,7 @@ sub _volume {
 	$index = $label;
 	if (defined($new_value)) {
 	} elsif ( $index < 0 or $index >= $self->numberOfTags() ) {
-	    carp "tag index '$index' out of range";
+	    carp "tag index `$index' out of range";
 	    return;
 	}
     } else {
@@ -138,7 +175,7 @@ sub _volume {
 	    $index = scalar(@{$self->{$v}});
 	    $self->{"_label_$label"} = $index;
 	} elsif ( !defined($index) ) {
-	    carp "tag label '$label' not defined";
+	    carp "tag label `$label' not defined";
 	    return;
 	}
     }
@@ -150,6 +187,32 @@ sub _volume {
     
     return @{$self->{$v}}[$index];
 }
+
+
+
+=item volume1
+
+=item volume2
+
+Returns all tag points in volume.
+
+=item volume1( N [, val ] )
+
+=item volume2( N [, val ] )
+
+Returns the Nth tag point of the volume.  Index starts at zero.
+
+If ref to array of three coordinates is given as optional second
+argument, the coordinates will be updated.
+
+=item volume1( label [, val ] )
+
+=item volume2( label [, val ] )
+
+Get or set the tag point specified by tag label, otherwise identical
+to second usage.
+
+=cut
 
 sub volume1 {
     my $self = shift;
@@ -163,8 +226,13 @@ sub volume2 {
     return $self->_volume( "_volume2", @_ );
 }
 
-# Get the label associated with point number `i'
-#
+
+=item label( N )
+
+Get the label associated with Nth tag point.  Index starts at zero.
+
+=cut
+
 sub label {
     my($self, $i) = @_;
 
@@ -180,8 +248,13 @@ sub label {
     return undef;
 }
 
-# Get list of all labels
-#
+
+=item all_labels()
+
+Return array of all labels in Tag file.
+
+=cut
+
 sub all_labels {
     my $self = shift;
     return map { /^_label_(.*)/ ? $1 : (); } keys %$self;
