@@ -1,0 +1,63 @@
+@PERL@ -w
+
+# 
+# Toy 'ls' program that handles errors properly, i.e. returns non-zero
+# on error (unlike, say, SunOS' ls program).
+#
+# Needed for testing MNI::Spawn module.
+#
+# by Greg Ward 1997/09/29
+#
+# $Id: toy_ls.in,v 1.1 1997-09-30 01:21:34 greg Rel $
+# 
+
+use strict;
+
+# behaves as follows:
+#  * if first argument is "-s", then will print out size of each file in blocks
+#  * if no arguments: stores list of all non-hidden files in current dir
+#  * else, walk list of arguments, warning about and discarding any that
+#    aren't actually files
+#  * then print the sorted file list, possibly with sizes
+#  * never descends subdirectories
+
+my ($print_sizes, $file, @files, %size);
+my $errors = 0;
+
+if (@ARGV && $ARGV[0] eq '-s')
+{
+   shift;
+   $print_sizes = 1;
+}
+
+if (@ARGV)
+{
+   while ($file = shift)
+   {
+      my @stat;
+      if (@stat = stat $file)
+      {
+         $size{$file} = $stat[12] if $print_sizes;
+         push (@files, $file);
+      }
+      else
+      {
+         warn "$file: $!\n";
+         $errors = 1;
+      }
+   }
+}
+else
+{
+   opendir (DIR, '.') || die "Couldn't opendir '.': $!\n";
+   @files = grep (! /^\./, readdir (DIR));
+   %size = map { $_ => (stat $_)[12] } @files;
+}
+
+map 
+{
+   printf "%5d ", $size{$_} if $print_sizes;
+   print $_ . "\n";
+} sort @files;
+
+exit $errors;
