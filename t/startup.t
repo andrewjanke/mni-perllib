@@ -7,7 +7,7 @@ my $i = 0;
 sub test { printf "%s %d\n", ($_[0] ? "ok" : "not ok"), ++$i; }
 sub announce { printf "test %d: %s\n", $i+1, $_[0] if $DEBUG }
 
-print "1..24\n";
+print "1..26\n";
 
 $DEBUG = 1;
 
