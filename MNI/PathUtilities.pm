@@ -18,7 +18,7 @@
 #              AutoLoader
 #@CREATED    : 1997/05/13, Greg Ward (from path_utilities.pl, revision 1.10)
 #@MODIFIED   : 
-#@VERSION    : $Id: PathUtilities.pm,v 1.7 1997-08-27 13:40:56 greg Exp $
+#@VERSION    : $Id: PathUtilities.pm,v 1.8 1997-09-10 16:00:09 greg Rel $
 #@COPYRIGHT  : Copyright (c) 1997 by Gregory P. Ward, McConnell Brain Imaging
 #              Centre, Montreal Neurological Institute, McGill University.
 #
@@ -161,7 +161,7 @@ sub normalize_dirs
 
    foreach (@_)
    {
-      $_ .= '/' unless $_ eq '' || substr ($_, -1, 1) eq '/';
+      $_ .= '/' unless ! defined $_ || $_ eq '' || substr ($_, -1, 1) eq '/';
    }
 }
 
