@@ -11,7 +11,7 @@
 #@REQUIRES   : Exporter
 #@CREATED    : 1997/07/07, Greg Ward (loosely based on JobControl.pm, rev 2.8)
 #@MODIFIED   : 
-#@VERSION    : $Id: Spawn.pm,v 1.2 1997-07-25 01:06:14 greg Exp $
+#@VERSION    : $Id: Spawn.pm,v 1.3 1997-07-25 01:45:20 greg Exp $
 #@COPYRIGHT  : Copyright (c) 1997 by Gregory P. Ward, McConnell Brain Imaging
 #              Centre, Montreal Neurological Institute, McGill University.
 #
@@ -677,8 +677,6 @@ sub output_mode
    {
       if (ref $dest)
       {
-         croak "spawn: $name must be a scalar or array reference to capture"
-            unless ref $dest eq 'SCALAR' || ref $dest eq 'ARRAY';
          ($mode = UNTOUCHED, $dest = '', last MODE)
             if $dest == UNTOUCHED;
          ($mode = MERGE, last MODE)
@@ -687,6 +685,8 @@ sub output_mode
             if $dest == REDIRECT;
          croak "spawn: $name must be a reference to capture"
             if $dest == CAPTURE;
+         croak "spawn: $name must be a scalar or array reference to capture"
+            unless ref $dest eq 'SCALAR' || ref $dest eq 'ARRAY';
          $mode = CAPTURE, last MODE;
       }
       else
@@ -754,13 +754,42 @@ sub exec_command
 }  # exec_command
 
 
+# ------------------------------ MNI Header ----------------------------------
+#@NAME       : capture_stream
+#@INPUT      : $stream
+#@OUTPUT     : $dest
+#@RETURNS    : 
+#@DESCRIPTION: Captures an entire input stream to a variable, which can
+#              be either a scalar or array.  If we capture to a scalar,
+#              all lines on the stream are concatenated with newlines 
+#              preserved; if to an array, each array element gets one 
+#              line, with newlines stripped.
+#@METHOD     : 
+#@GLOBALS    : 
+#@CALLERS    : 
+#@CALLS      : 
+#@CREATED    : 1997/07/24, GPW
+#@MODIFIED   : 
+#-----------------------------------------------------------------------------
+sub capture_stream
+{
+   my ($stream, $dest) = @_;
+
+   local $/ = "\n";                     # just in case!
+   $$dest = join ("", <$stream>), return if (ref $dest eq 'SCALAR');
+   chomp (@$dest = <$stream>),    return if (ref $dest eq 'ARRAY');
+   confess "capture_stream: \$dest must be scalar or array ref";
+}
+
+
 
 # ------------------------------ MNI Header ----------------------------------
 #@NAME       : &gather_error
 #@INPUT      : $pid   - process id of the now deceased child, presumed
 #                       to have written its stderr to /tmp/error$pid.log
 #                       (in fact, we crash 'n burn if this file is not found)
-#@OUTPUT     : 
+#@OUTPUT     : $dest  - (scalar or array ref) contents of stderr are put
+#                       into the referenced variable
 #@RETURNS    : $error - the contents of that temporary file -- all lines
 #                       are concatented together, but the newlines are
 #                       preserved
@@ -775,19 +804,17 @@ sub exec_command
 #-----------------------------------------------------------------------------
 sub gather_error
 {
-   my ($pid) = @_;
-   my ($filename, $error);
+   my ($pid, $dest) = @_;
+   my ($filename);
 
    $filename = "/tmp/error${pid}.log";
 
    open (ERROR, "<$filename") || 
       confess ("spawn: unable to open \"$filename\": $!");
-   $error = join ("", <ERROR>);
+   capture_stream (\*ERROR, $dest);
    close (ERROR);
    unlink ($filename) ||
       carp ("spawn: warning: unable to delete temporary file $filename: $!");
-
-   $error;
 }  # gather_error
 
 
@@ -836,6 +863,8 @@ sub obituary
           ($stderr_mode == CAPTURE && $error))
       {
          my $p = $program || "the child program";
+         $output = ref ($output eq 'ARRAY') ? join ("\n", @$output) : $$output;
+         $error = ref ($error eq 'ARRAY') ? join ("\n", @$error) : $$error;
          $text .= "\nHere is ${p}'s standard output:\n$output\n"
             if ($stdout_mode == CAPTURE && $output);
          $text .= "\n\nHere is ${p}'s standard error:\n$error\n"
@@ -1032,19 +1061,19 @@ sub spawn_capture
    # $pid is not 0, so we're in the parent.  We read in the child's stdout
    # (and stderr too if it was captured).
 
-   $$stdout = join ("", <PIPE>);        # read entire output, newlines intact
+   capture_stream (\*PIPE, $stdout);
    close (PIPE);
    $status = $?;                        # get child's termination status
 
    if ($stderr_mode == CAPTURE)         # did we "capture" stderr?
    {                                    # then read it in from temp file
-      $$stderr = gather_error ($pid);
+      gather_error ($pid, $stderr);
    }
 
    $self->check_status ($status, $program, $command,
                         $stdout_mode, $stderr_mode,
-                        $$stdout, 
-                        ($stderr_mode == CAPTURE) ? $$stderr : undef);
+                        $stdout, 
+                        ($stderr_mode == CAPTURE) ? $stderr : undef);
 
    return $status;
 }
@@ -1097,13 +1126,13 @@ sub spawn_redirect
 
    if ($stderr_mode == CAPTURE)
    {
-      $$stderr = gather_error ($pid);
+      gather_error ($pid, $stderr);
    }
 
    $self->check_status ($status, $program, $command,
                         $stdout_mode, $stderr_mode,
                         undef,
-                        ($stderr_mode == CAPTURE) ? $$stderr : undef);
+                        ($stderr_mode == CAPTURE) ? $stderr : undef);
 
    return $status;
 }
