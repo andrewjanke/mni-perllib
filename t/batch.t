@@ -16,7 +16,7 @@ my $err = ".err$$";
 
 # 1 test
 sub start_batchtest {
-    unlink( 'out', 'err' );
+    unlink( $out, $err );
     test( StartJob( "batch.t.$i", $out, $err, 0 ));
 }
 
@@ -90,10 +90,10 @@ QueueCommand( 'ls' );
 wait_for_files( FinishJob() );
 
 
-# Test StartJobAfter
+# Test StartAfter option
 my $syncfile = "$syncdir/startnextjob";
 unlink $syncfile;
-test( StartJobAfter( $syncfile, "batch.t.$i", undef, undef, 0 ));
+test( StartJob( "batch.t.$i", undef, undef, 0, StartAfter => $syncfile ));
 QueueCommand( 'ls' );
 my $finishfile = FinishJob();
 sleep( 10 );
@@ -101,7 +101,7 @@ test( ! -f $finishfile );
 `touch $syncfile`;
 die if $?;
 
-# StartJobAfter tests don't work right ... 
+# StartAfter tests don't work right ... 
 # One often (always?) needs > 30 seconds for the job to complete
 # so just forget about testing it.
 #

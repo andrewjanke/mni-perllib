@@ -40,7 +40,7 @@ MNI::Batch - execute commands via the UCSF Batch Queuing System
 
   use MNI::Batch qw(:all);
 
-  MNI::Batch::SetOptions( Queue => long, Synchronize = 'finish' );
+  MNI::Batch::SetOptions( Queue => 'long', Synchronize = 'finish' );
 
   StartJob( 'doit', 'logfile', undef, 1 );
   QueueCommand( 'ls -lR' );
@@ -187,7 +187,7 @@ $JobPID = 0;
 %JobName = ();                  # map job pid -> name
 %SyncFiles = ();                # map job pid -> filename hash
                                 # the filename hash maps condition to filename
-$WaitFile = '';                 # delay job until file appears
+
 
 
 # [CC] inspired by (errr, "copied" from ;-) MNI::Spawn.pm 
@@ -200,39 +200,49 @@ else {
 }   
 
 
+# Input: opt => val, opt => val ...
+#
 sub gen_batch_options
 {
-   my ($jobname, $stdout, $stderr, $merge) = @_;
-   my ($options);
+    croak "must supply even number of arguments (option/value pairs)"
+      unless (@_ % 2 == 0);
+    
+    # Options are the union of the default %Options, and others given
+    # as parameters.  The latter override the former.
+    my %opt = %Options;
+    while (@_) {
+	my $key = shift;
+	$opt{$key} = shift;
+    }
 
-   # First, options based on the package-global option variables
+    # First, options based on the package-global option variables
 
-   $options = " -s $Options{'Shell'}" if $Options{'Shell'};
-   foreach ( split( /[\s,;]+/, $Options{'Host'})) {
-       $options .= " -H $_";
-   }
-   $options .= " -l" if $Options{'LocalHost'};
-   $options .= " -Q $Options{'Queue'}" if $Options{'Queue'};
-   $options .= " -S" if $Options{'Restartable'};
-   $options .= " -m $Options{'MailConditions'}" if $Options{'MailConditions'};
-   $options .= " -M $Options{'MailAddress'}" if $Options{'MailAddress'};
-   $options .= " -w $Options{'WriteConditions'}" if $Options{'WriteConditions'};
-   $options .= " -W $Options{'WriteAddress'}" if $Options{'WriteAddress'};
+    my $options = " -s $opt{'Shell'}" if $opt{'Shell'};
+    foreach ( split( /[\s,;]+/, $opt{'Host'})) {
+	$options .= " -H $_";
+    }
+    $options .= " -l" if $opt{'LocalHost'};
+    $options .= " -Q $opt{'Queue'}" if $opt{'Queue'};
+    $options .= " -S" if $opt{'Restartable'};
+    $options .= " -m $opt{'MailConditions'}" if $opt{'MailConditions'};
+    $options .= " -M $opt{'MailAddress'}" if $opt{'MailAddress'};
+    $options .= " -w $opt{'WriteConditions'}" if $opt{'WriteConditions'};
+    $options .= " -W $opt{'WriteAddress'}" if $opt{'WriteAddress'};
 
-   # Now the more job-specific stuff (provided by parameters to either
-   # &StartJob or &QueueCommand)
+    # Now the more job-specific stuff (provided by parameters to either
+    # &StartJob or &QueueCommand)
 
-   # Does it make ssense to allow stdout, stderr, AND merge?
-   # The MNI::Spawn module, for instance, ignores the stderr file,
-   # and forces a merge, in this situation.
-   $options .= " -J $jobname" if $jobname;
-   $options .= " -o $stdout" if $stdout;
-   $options .= " -e $stderr" if $stderr;
-   $options .= " -k" if $merge;
+    # Does it make ssense to allow stdout, stderr, AND merge?
+    # The MNI::Spawn module, for instance, ignores the stderr file,
+    # and forces a merge, in this situation.
+    $options .= " -J $opt{'jobname'}" if $opt{'jobname'};
+    $options .= " -o $opt{'stdout'}" if $opt{'stdout'};
+    $options .= " -e $opt{'stderr'}" if $opt{'stderr'};
+    $options .= " -k" if $opt{'merge'};
 
-   $options .= " -a $WaitFile" if $WaitFile;
+    $options .= " -a $opt{'StartAfter'}" if $opt{'StartAfter'};
 
-   $options;
+    $options;
 }
 
 
@@ -371,9 +381,8 @@ job.
 sub StartJob
 {
    croak ("MNI::Batch::StartJob: wrong number of arguments")
-      unless (@_ == 4);
-   my ($jobname, $stdout, $stderr, $merge) = @_;
-   my ($options);
+      unless (@_ >= 4);
+   my ($jobname, $stdout, $stderr, $merge, @extra_opts) = @_;
 
    &set_undefined_option( 'Verbose', 'Verbose');
    &set_undefined_option( 'Execute', 'Execute');
@@ -381,7 +390,11 @@ sub StartJob
    croak ("StartBatchJob: already an open batch job")
      if ($JobPID);
 
-   $options = &gen_batch_options ($jobname, $stdout, $stderr, $merge);
+   my $options = &gen_batch_options ( jobname => $jobname, 
+				      stdout => $stdout, 
+				      stderr => $stderr, 
+				      merge => $merge,
+				      @extra_opts );
    my $lh = $Options{'LogHandle'};
    printf $lh "[%s] [%s] [%s] starting batch job: batch%s", 
       $ProgramName, userstamp(), timestamp(), $options
@@ -429,21 +442,6 @@ END
 
    $JobPID;
 }  # &StartJob
-
-
-=item StartJobAfter( filename, jobname, stdout, stderr, merge )
-
-Like StartJob, but delay the job until the I<filename> exists.
-
-=cut
-
-sub StartJobAfter
-{
-    $WaitFile = shift;
-    my $ret = StartJob( @_ );
-    $WaitFile = '';
-    return $ret;
-}
 
 
 =item FinishJob( [delay] )
@@ -657,7 +655,7 @@ No useful return value.
 #-----------------------------------------------------------------------------
 sub QueueCommand
 {
-   my ($command, $jobname, $stdout, $stderr, $merge) = @_;
+   my ($command, $jobname, $stdout, $stderr, $merge, @extra_args) = @_;
    my ($program, $options, $redirect);
 
    &set_undefined_option( 'Verbose', 'Verbose');
@@ -707,7 +705,11 @@ END
    else
    {
       carp ("Warning: you're missing out on a lot of features by using QueueCommand like this");
-      $options = &gen_batch_options ($jobname, $stdout, $stderr, $merge);
+      $options = &gen_batch_options ( jobname => $jobname, 
+				      stdout => $stdout, 
+				      stderr => $stderr, 
+				      merge => $merge,
+				      @extra_args );
       printf $lh ("[%s] [%s] [batch queued] %s\n", 
                   userstamp(), timestamp(), $command)
 	 if $Options{'Verbose'};
@@ -752,35 +754,22 @@ the finish synchronizing file is returned.
 #-----------------------------------------------------------------------------
 sub QueueCommands
 {
-   my ($commands, $jobname, $stdout, $stderr, $merge) = @_;
+    my ($commands, $jobname, $stdout, $stderr, $merge) = @_;
 
-   &set_undefined_option( 'Verbose', 'Verbose');
-   &set_undefined_option( 'Execute', 'Execute');
+    # Remove any empty commands from the command list
 
-   # Remove any empty commands from the command list
+    my @commands = grep ($_, @$commands);
+    carp "No commands to queue!" and return
+      unless @commands;
 
-   my @commands = grep ($_, @$commands);
+    my $exclusive = 0;
+    if ( $JobPID == 0 ) {
+	$exclusive = 1;		# this will be ours to close when done
+	StartJob ($jobname, $stdout, $stderr, $merge);
+    }
 
-   unless (@commands)
-   {
-      carp "No commands to queue!";
-      return;
-   }
-
-   my $exclusive = 0;
-   unless ($JobPID)	# no batch job open already?
-   {
-      $exclusive = 1;		# this will be ours to close when done
-      StartJob ($jobname, $stdout, $stderr, $merge);
-   }
-
-   my $cmd;
-   foreach $cmd (@commands)
-   {
-      QueueCommand ($cmd);
-   }
-
-   return FinishJob() if $exclusive;
+    map( QueueCommand($_), @commands );
+    return FinishJob() if $exclusive;
 }
 
 =back
@@ -788,7 +777,7 @@ sub QueueCommands
 =head1 AUTHOR
 
 Greg Ward, <greg@bic.mni.mcgill.ca>.  With modifications by Chris Cocosco,
-Steve Robbins, and probably dozens of others.
+Steve Robbins, possibly others.
 
 =head1 COPYRIGHT
 

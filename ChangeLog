@@ -1,3 +1,15 @@
+Thu Jul 22 19:52:36 1999  Steve ROBBINS  <stever@bic.mni.mcgill.ca>
+
+	* MNI/Batch.pm (gen_batch_options, StartJob, QueueCommand): allow
+ 	overriding any option on a per-job basis.  Implement `StartAfter' 
+	option, passed on to batch as `-a'.
+	(StartJobAfter): removed function.
+
+	* t/batch.t: bugfix (start_batchtest) and changes related to above.
+
+	* MNI/Batch.pm (QueueCommands): compacted the code.  No semantic
+ 	changes made.
+
 Tue May 18 18:36:39 1999  Steve ROBBINS  <stever@bic.mni.mcgill.ca>
 
 	* MNI/Batch.pm (StartJobAfter): experimental batch interface using
