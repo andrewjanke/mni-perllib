@@ -69,10 +69,16 @@ sub to_string {
     $str .= sprintf( " %.15g %.15g %.15g", @{$self->volume2} )
       if defined($self->volume2);
 
+    # weight, structure_id, and patient_id are optional (but either 
+    # all of them have to be defined, or none of them should!)
+
     $str .= sprintf( " %d %d %d", 
 		     $self->weight,
 		     $self->structure_id,
-		     $self->patient_id );
+		     $self->patient_id )
+	if defined($self->weight) && 
+	    defined($self->structure_id) && 
+		defined($self->patient_id);
 
     $str .= ' "' . $self->label . '"'
       if defined($self->label);

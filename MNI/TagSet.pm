@@ -24,7 +24,9 @@ use strict;
 use Carp;
 use File::Basename;
 use File::Path;
+use Text::ParseWords;
 use MNI::TagPoint;
+use MNI::MiscUtilities;
 
 
 my $TAG_FILE_HEADER = "MNI Tag Point File";
@@ -222,6 +224,56 @@ sub add_points {
     $self->{_dirty} = 1;
 }
 
+# [CC, 2001/06/24]
+#
+# given a volume1 position (as a ref to an array of coordinates),
+# it returns the index of the first tag point at that location,
+# or undef if not found.
+#
+# BUGS: it may not work properly on non-int tag coordinates!
+# CAVEATS: it is very slow!
+#
+sub find_tag {
+    my( $self, $position ) = @_;
+    my $index = 0;
+    foreach my $tag (@{$self->{set}}) {
+	return $index 
+	    if MNI::MiscUtilities::nlist_equal( $tag->volume1, $position); 
+	++$index;
+    }
+    return undef;
+}
+
+# [CC, 2001/06/24]
+#
+# given a volume1 position (as a ref to an array of coordinates),
+# it returns the index of the first tag point at that location,
+# or undef if not found.
+#
+# CAVEATs: 
+#   - coordinates different by less than 0.01mm are considered equal
+#   - only works fast if the tagset was read from disk and never modified
+#     (i.e. if ! _dirty )
+#
+sub fast_find_tag {
+    my( $self, $position ) = @_;
+
+    return $self->find_tag($position)
+	if $self->{_dirty};
+    
+    my @position;
+    # create the search hash first time when we're called
+    unless( $self->{_search} ) {
+	my $index = 0;
+	foreach my $tag (@{$self->{set}}) {
+	    @position= map { 100*$_ } @{$tag->volume1};
+	    $self->{_search}->{$position[0]}{$position[1]}{$position[2]} = 
+		$index ++;
+	}
+    }
+    @position= map { 100*$_ } @$position;
+    return $self->{_search}->{$position[0]}{$position[1]}{$position[2]};
+}
 
 # Convert to TagPoint index.
 #
@@ -422,6 +474,8 @@ sub load {
 	my $val;
 	my @args;
 
+	chomp; 	s/;$//;
+
 	($_,$val) = _read_point( $_ );
 	push(@args, 'volume1' => $val);
 
@@ -429,18 +483,35 @@ sub load {
 	    ($_,$val) = _read_point( $_ );
 	    push(@args, 'volume2' => $val);
 	}
+	
+	# MNI tag files can have either of: 0, 1, or 4 additional 
+	# strings of info, white-space separated; the last string 
+	# (if any) is always the label.
+	#
+	# these (optional) additional strings are: weight (float), 
+	# structure_id (integer), patient_id (int), label (string --
+	# can be optionally double-quoted to allow white-space in it).
+	
+	# this silly thing called Text::ParseWords::quotewords doesn't
+	# properly handle leading and trailing delimiters (white-space): 
+	# if there is any, the first and last elements of @words will 
+	# be empty !!?
+	s/^\s*//;  s/\s*$//; # strip leading/trailing white-space
+	my @words= Text::ParseWords::quotewords( '\s+', 0, $_ );
+	#foreach (@words) { print "\'${_}\' "; }	print "\n";
 
-	($_,$val) = _read_int( $_ );
-	push(@args, 'weight' => $val) if defined($val);
-
-	($_,$val) = _read_int( $_ );
-	push(@args, 'structure_id' => $val) if defined($val);
-
-	($_,$val) = _read_int( $_ );
-	push(@args, 'patient_id' => $val) if defined($val);
-
-	($_,$val) = _read_label( $_ );
-	push(@args, 'label' => $val) if defined($val);
+	if( 4 == @words ) {
+	    # TODO: check if we have indeed a (float, int, int, string)
+	    my %tmphash;
+	    @tmphash{ (qw/ weight structure_id patient_id label /) }= @words;
+	    push(@args, %tmphash);
+	}
+	elsif( 1 == @words ) {
+	    push(@args, 'label' => $words[0]);
+	}
+	elsif( 0 != @words ) {
+	    croak "$filename : invalid format (" . scalar(@words) . ": unexpected number of additional strings)\n";
+	}
 
 	push( @{$self->{set}}, new MNI::TagPoint( @args ) );
 
@@ -456,18 +527,18 @@ sub _read_point {
     return ($', [ $1, $2, $3 ] );
 }
 
-sub _read_int {
-    $_[0] =~ /([+-]?[\d]+)/;
-    if ( !defined($1) ) {
-	return ( $_[0], undef );
-    }
-    return ( $', $1 );
-}
+#  sub _read_int {
+#      $_[0] =~ /([+-]?[\d]+)/;
+#      if ( !defined($1) ) {
+#  	return ( $_[0], undef );
+#      }
+#      return ( $', $1 );
+#  }
 
-sub _read_label {
-    $_[0] =~ /\"(.*)\"/;
-    return ($',$1);
-}
+#  sub _read_label {
+#      $_[0] =~ /\"(.*)\"/;
+#      return ($',$1);
+#  }
 
 
 

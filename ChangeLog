@@ -1,3 +1,15 @@
+2001-07-04  Chris COCOSCO  <crisco@feeble.bic.mni.mcgill.ca>
+
+	* MNI/TagSet.pm (load) : fixed input parsing to match the tag
+	file format as defined by the volume_io documentation
+
+	* MNI/TagPoint.pm (to_string) : fixed output to match what
+	volume_io is doing
+
+	* MNI/TagSet.pm (find_tag): new function
+
+	* MNI/TagSet.pm (fast_find_tag): new function
+
 2001-06-11  Steve M. Robbins  <steve@nyongwa.montreal.qc.ca>
 
 	* MNI/Batch.pm (JobStatus): Set verbose and execute options for
