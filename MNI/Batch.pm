@@ -12,7 +12,7 @@
 #@CREATED    : 95/11/13, Greg Ward
 #@MODIFIED   : 98/11/06, Chris Cocosco: -ported from Batch.pm ... (STILL BETA!)
 #@MODIFIED   : (...see CVS for more history info)
-#@VERSION    : $Id: Batch.pm,v 1.10 1999-11-30 17:11:10 crisco Exp $
+#@VERSION    : $Id: Batch.pm,v 1.11 1999-12-03 01:27:30 crisco Exp $
 #-----------------------------------------------------------------------------
 require 5.002;
 
@@ -79,6 +79,10 @@ should we echo queue commands and other info?
 =item loghandle        
 
 where to echo queue commands and other info
+
+=item batch_reports
+
+should the underlying batch process run in verbose mode?
 
 =item execute          
 
@@ -178,6 +182,7 @@ stderr is set.
 
 my %DefaultOptions = ( verbose          => undef,
 		       loghandle        => \*STDOUT,
+		       batch_reports    => undef,
 		       execute          => undef,
 		       check_status     => 1,
 		       export_tmpdir    => '',
@@ -297,6 +302,7 @@ sub _batch_optstring
 
     my $optstring = '';
 
+    $optstring .= " -q" unless $Options{'batch_reports'};
     $optstring .= " -J $Options{'job_name'}" if $Options{'job_name'};
     $optstring .= " -Q $Options{'queue'}" if $Options{'queue'};
     $optstring .= " -a $Options{'start_after'}" if $Options{'start_after'};
@@ -495,6 +501,10 @@ sub StartJob
     #
     &set_undefined_option( 'verbose', 'Verbose');
     &set_undefined_option( 'execute', 'Execute');
+    if( !defined( $Options{ 'batch_reports'}) ) {
+	# unless the user explicitly sets it, simply use verbose's setting
+	$Options{ 'batch_reports'}= $Options{ 'verbose'};
+    }
 
     my $cmd = 'batch ' . _batch_optstring();
 
