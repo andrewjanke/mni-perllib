@@ -14,7 +14,7 @@
 #@REQUIRES   : Exporter
 #@CREATED    : 1997/07/07, Greg Ward (loosely based on JobControl.pm, rev 2.8)
 #@MODIFIED   : 
-#@VERSION    : $Id: Spawn.pm,v 1.10 1997-09-25 18:48:11 greg Exp $
+#@VERSION    : $Id: Spawn.pm,v 1.11 1997-10-01 20:18:46 greg Rel $
 #@COPYRIGHT  : Copyright (c) 1997 by Gregory P. Ward, McConnell Brain Imaging
 #              Centre, Montreal Neurological Institute, McGill University.
 #
@@ -170,38 +170,64 @@ sub set_options
 #@RETURNS    : 
 #@DESCRIPTION: 
 #@CREATED    : 1997/07/07, GPW, from FindPrograms in JobControl.pm
-#@MODIFIED   : 
+#@MODIFIED   : 1997/10/01, GPW: changed so $programs can be a hash ref
 #-----------------------------------------------------------------------------
 sub register_programs
 {
    my ($self, $programs, $path) = @_;
 
-   croak 'register_programs: $programs must be an array reference'
-      unless ref $programs eq 'ARRAY';
-   croak 'register_programs: if supplied, $path must be a scalar or list reference'
+   croak 'register_programs: $programs must be a list or hash reference'
+      unless ref $programs eq 'ARRAY' || ref $programs eq 'HASH';
+   croak 'register_programs: if supplied, $path must be a list reference' .
+         ' or simple string'
       unless (ref $path eq 'ARRAY' || ! ref $path);
 
    my (@fullpaths, @warnings);
 
-   @warnings = catch_warnings
-      (sub
-       { 
-          @fullpaths = find_programs 
-             ($programs, $path || $self->{search_path});
-       });
-
-   if (@fullpaths)              # all found successfully?
+   if (ref $programs eq 'ARRAY')
    {
-      confess "Wrong number of full paths to go with program list"
-         unless (@fullpaths == @$programs);
+      @warnings = catch_warnings
+         (sub
+          { 
+             @fullpaths = find_programs 
+                ($programs, $path || $self->{search_path});
+          });
 
-      map { $self->{programs}{$_} = shift @fullpaths } @$programs;
-      return 1;
+      if (@fullpaths)              # all found successfully?
+      {
+         confess "Wrong number of full paths to go with program list"
+            unless (@fullpaths == @$programs);
+
+         map { $self->{programs}{$_} = shift @fullpaths } @$programs;
+         return 1;
+      }
+      else
+      {
+         map { warn "$ProgramName: \l$_" } @warnings;
+         return 0;
+      }
    }
-   else
+   elsif (ref $programs eq 'HASH')
    {
-      map { warn "$ProgramName: \l$_" } @warnings;
-      return 0;
+      my ($key, $value);
+      my $errors = 0;
+
+      carp "register_programs: \$path ignored in \$programs is a hash ref"
+         if defined $path;
+      while (($key, $value) = each %$programs)
+      {
+         unless (-x $value)
+         {
+            warn "$ProgramName: \"$value\" doesn't exist or not executable\n";
+            $errors++;
+         }
+         else
+         {
+            $self->{programs}{$key} = $value;
+         }
+      }
+
+      return ($errors == 0);
    }
 }
 
