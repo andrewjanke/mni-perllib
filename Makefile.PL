@@ -6,7 +6,7 @@
 #
 # Greg Ward, summer 1997
 #
-# $Id: Makefile.PL,v 1.1 1997-09-17 22:44:15 greg Exp $
+# $Id: Makefile.PL,v 1.2 1997-09-17 22:45:54 greg Exp $
 #
 
 use strict;
@@ -57,39 +57,6 @@ warning: $dir doesn't exist; you'll have to create it before
 WARN
    $subs{'DEFAULT_DATA_DIR'} = $dir;
 }  # &query_subs
-
-
-sub perform_subs
-{
-   my ($infile, $outfile);
-
-   $| = 1;
-   print "Performing substitutions: ";
-   for $infile (@sub_files)
-   {
-      print "$infile..";
-      ($outfile = $infile) =~ s/\.in$//;
-      die "don't understand \"$infile\"" unless $outfile;
-
-      open (IN, $infile) || die "couldn't open $infile: $!\n";
-      open (OUT, ">$outfile") || die "couldn't create $outfile: $!\n";
-
-      while (<IN>)
-      {
-         s{\@([A-Z_]+)\@}
-          {$subs{$1} || 
-              (warn ("$infile, line $.: unknown sub token \"$1\"\n"), "\@$1\@")
-          }eg;
-         print OUT;
-      }
-
-      close (IN);
-      close (OUT);
-
-      chmod 0444, $outfile;             # so I don't accidentally edit it!
-   }
-   print "done!\n";
-}  # &perform_subs
 
 
 # ----------------------------------------------------------------------
@@ -231,7 +198,6 @@ TEXT
 
 
 query_subs;
-# perform_subs;
 
 my $f;
 WriteMakefile 
