@@ -13,7 +13,7 @@ use MNI::FileUtilities qw(:search);
 my $i = 0;
 sub test { printf "%s %d\n", ($_[0] ? "ok" : "not ok"), ++$i; }
 
-print "1..15\n";
+print "1..19\n";
 
 # Load up code common to all FileUtilities test programs
 require "t/fileutil_common.pl";
@@ -24,9 +24,17 @@ test (search_directories ('checkfiles.t', ['', 't', '/']) eq 't/');
 test (search_directories ('checkfiles.t', ['', 't', '/'], '-e && -r') eq 't/');
 test (! search_directories ('checkfiles.t', ['', 't', '/'], '-e && -d'));
 
-test (search_directories ('MiscUtilities.pm', ['', 't', '/']) eq './');
+@path = ('', 't', '/');
+test (search_directories ('checkfiles.t', \@path) eq 't/');
+test ($path[0] eq '' && $path[1] eq 't' && $path[2] eq '/');
+
+($d1, $d2, $d3) = ('', 't', '/');
+test (search_directories ('checkfiles.t', [$d1, $d2, $d3]) eq 't/');
+test ($d1 eq '' && $d2 eq 't' && $d3 eq '/');
+
+test (search_directories ('MiscUtilities.pm', ['', 't', '/']) eq '');
 test (search_directories ('MiscUtilities.pm', ['', 't', '/'], '-e && -r')
-      eq './');
+      eq '');
 test (! search_directories ('MiscUtilities.pm', ['', 't', '/'], '-e && -d'));
 
 test (search_directories ('MiscUtilities.pm', ['.', 't', '/']) eq './');
