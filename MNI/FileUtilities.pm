@@ -17,7 +17,7 @@
 #@REQUIRES   : Exporter
 #@CREATED    : 1997/04/25, Greg Ward (from file_utilities.pl, revision 1.16)
 #@MODIFIED   : 
-#@VERSION    : $Id: FileUtilities.pm,v 1.6 1997-08-13 13:56:12 greg Exp $
+#@VERSION    : $Id: FileUtilities.pm,v 1.7 1997-08-13 15:03:57 greg Exp $
 #@COPYRIGHT  : Copyright (c) 1997 by Gregory P. Ward, McConnell Brain Imaging
 #              Centre, Montreal Neurological Institute, McGill University.
 #
@@ -968,14 +968,14 @@ common idiom is:
    @programs = find_programs (\@programs);
    exit 1 unless @programs;
 
-(Note that if you are using the F<MNI::Spawn> module, you'll probably
-never call this C<find_programs> directly.  Rather, there is a
-C<FindPrograms> subroutine in F<MNI::Spawn> that maintains a private
+(Note that if you are using the F<MNI::Spawn> module, you'll probably never
+need to call C<find_programs> directly.  Rather, there is a
+C<RegisterPrograms> subroutine in F<MNI::Spawn> that maintains a private
 hash of all "known" programs and their full paths, so you never have to
 worry about keeping track of both program names and their full paths.
-Unsurprisingly, C<MNI::FileUtilities::find_programs> is used by
-C<MNI::Spawn::FindPrograms>.  See the F<MNI::Spawn> documentation
-for more details.)
+Unsurprisingly, C<MNI::FileUtilities::find_programs> is called by
+C<MNI::Spawn::RegisterPrograms>.  See the F<MNI::Spawn> documentation for
+more details.)
 
 =cut
 
