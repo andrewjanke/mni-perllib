@@ -425,7 +425,7 @@ being printed just before the command is executed:
      [1997-07-21 23:51:41] /bin/ls
 
 (Yes, this is a rather ridiculous amount of information to provide.
-Trust me, though---at some point, trying to trace the complicated
+Trust me, though---at some point, when trying to trace the complicated
 history of some data in the absence of other information, you'll be glad
 to have it.)
 
@@ -603,7 +603,7 @@ shell, such as C<' ls *.foo'> or C<'lsE<gt>log'> are not properly
 handled by C<Spawn> (yet another reason to avoid the command-as-string
 method).
 
-=head2 Program name to full path
+=head2 Expanding program name
 
 If the program name is "bare" (contains no slashes), then C<Spawn> will
 attempt to resolve it to a full path.  This is first done by looking up the
@@ -749,7 +749,7 @@ F<MNI::Spawn> provides a special constant C<UNTOUCHED>:
 
 will redirect the child's stdout, but leave its stderr alone---so it
 will wind up on the stderr of your program.
-
+<
 Finally, if you want to force C<Spawn> to merge stderr with stdout, a
 second special constant, C<MERGE>, is provided:
 
@@ -764,6 +764,34 @@ see some error messages at all---almost always a situation to be
 avoided.  It's usually best just to leave the child's stderr alone (or
 let C<Spawn> merge it into a stdout log file), to maximize the end
 user's chance of seeing his error messages.
+
+=head1 INTERFACE TO MNI::STARTUP
+
+Apart from the trickery involved in setting default values for the
+C<verbose> and C<execute> options, F<MNI::Spawn> has another possible
+interaction with the F<MNI::Startup> module.  To make things
+interesting, however, this is an interaction with F<MNI::Startup>---in
+particular, the C<self_announce> subroutine---in child programs spawned
+by C<Spawn>.
+
+In particular, C<Spawn> decides whether the child ought to announce its
+arguments (and other details of its execution environment) to the world.
+Normally, when a program's output is being logged to a file, it should
+make such an announcement.  However, if C<Spawn>'s C<verbose> option is
+true, it will have already done so.  If the child program's output is
+not being redirected---i.e. it will wind up in the same place as its
+parent's output, including C<Spawn>'s verbosities---then having the
+child print its command line would be redundant and contribute needless
+clutter to the parent's log file.  Thus, in that case, C<Spawn> sets the
+environment variable C<suppress_announce> to true.  (It also sets the
+environment variable if the child's output is being captured; in that
+case, you probably don't want to have to filter out the excess lines in
+the capture variable.)
+
+It is then the responsibility of C<MNI::Startup::self_announce> in the
+child program to check the value of C<suppress_announce> and act
+appropriately.  See L<MNI::Startup> for details of that side of the
+conspiracy.
 
 =head1 ERROR HANDLING
 
