@@ -742,7 +742,7 @@ user's chance of seeing his error messages.
 Paying attention to the failure of a child program is an important
 aspect of writing robust programs.  In the shell (or Perl, just using
 C<system>), this is a pain---you have to check C<$?> (or C<system>'s
-return value) after every single invocation of external program, e.g.
+return value) after every single invocation of an external program, e.g.
 
    system ("ls", @files)          && die "ls failed\n";
    system ("cp", @files, $newdir) && die "cp failed\n";
@@ -766,14 +766,14 @@ over this simple subroutine (for error handling, at least) is the
 customizable response to a child program's failure or abnormal
 termination.
 
-First, a child is deemed to have crashed any time its termination status
-(the 16-bit word provided by the C<wait()> and C<waitpid()> system calls,
-and made available in Perl through the C<$?> special variable) is non-zero.
-This word encapsulates both the exit status---which is passed by a program
-to C<exit()> in the case of normal termination---and the signal number
-responsible for a program's abnormal termination (if any).  Currently,
-F<MNI::Spawn> treats any non-zero termination status the same: the child
-program is deemed to have "crashed".
+First, a child is deemed to have crashed any time its termination status is
+non-zero.  The I<termination status> is the 16-bit word provided by the
+C<wait()> and C<waitpid()> system calls, and made available in Perl through
+the C<$?> special variable.  It encapsulates both the exit status---which
+is passed by a program to C<exit()> in the case of normal termination---and
+the signal number responsible for a program's abnormal termination (if
+any).  Currently, F<MNI::Spawn> treats any non-zero termination status the
+same: the child program is deemed to have "crashed".
 
 When such a crash is detected, C<Spawn> takes its directions from the
 C<err_action> option.  Currently the following values are supported:
@@ -819,6 +819,10 @@ consists solely of a string of lowercase letters and underscores, as I
 reserve that for future "magic keywords" (like C<'fatal'>).
 
 =back
+
+Note that C<Spawn> returns the termination status (assuming it returns at
+all), so if it doesn't crash your program you can still detect failed
+executions.
 
 =head1 CONVENTIONAL INTERFACE
 
@@ -897,22 +901,33 @@ to C<both>.
 
 =item Spawn (COMMAND [, OPTION, VALUE, ...])
 
-Executes a single command.  Option/value pairs may be supplied as for
-C<SetOptions>; they only take effect for the duration of this C<Spawn>
-call.  COMMAND may be a string or a list ref; if it is a string, the
-same caveats as for Perl's C<system> and C<exec> functions
-apply---namely, that the presence of shell metacharacters in your
-command string means it will be processed by C</bin/sh>; otherwise, it
-will be handled directly by Perl.  For this reason, it is best to stick
-to the "command as list" paradigm; most uses for shell metacharacters
-can be better done within Perl, either using standard Perl features or
-F<MNI::Spawn>'s redirection/capture feature.  For example, you can
-replace any shell globbing pattern with C<opendir>, C<readdir>, and
-C<grep> (and use Perl's more powerful regular expression engine); most
-pipelines involving standard Unix utilities like C<grep>, C<sed>,
-C<awk>, C<cut>, etc. are easily and more efficiently implemented
+Executes a single command.  (Or, more accurately, C<fork>s and C<exec>s the
+command in the child process with appropriate output/error redirection.)
+Option/value pairs may be supplied as for C<SetOptions>; they only take
+effect for the duration of this C<Spawn> call, though.  COMMAND may be a
+string or a list ref; if it is a string, the same caveats as for Perl's
+C<system> and C<exec> functions apply---namely, that the presence of shell
+metacharacters in your command string means it will be processed by
+C</bin/sh>; otherwise, it will be handled directly by Perl.  For this
+reason, it is best to stick to the "command as list" paradigm; most uses
+for shell metacharacters can be better done within Perl, either using
+standard Perl features or F<MNI::Spawn>'s redirection/capture feature.  For
+example, you can replace any shell globbing pattern with C<opendir>,
+C<readdir>, and C<grep> (and use Perl's more powerful regular expression
+engine); most pipelines involving standard Unix utilities like C<grep>,
+C<sed>, C<awk>, C<cut>, etc. are easily and more efficiently implemented
 directly in Perl; and, of course, C<Spawn> can do output redirection or
 capturing for you.
+
+Returns the program's termination status (this is the 16-bit word supplied
+by C<waitpid(2)> that includes both the program's exit status and the
+signal that killed it, if any).  If we couldn't even run the program,
+returns a made-up non-zero termination status (C<255 E<gt>E<gt> 8>, for
+what it's worth).  Thus, any non-zero return value implies failure.  Thus,
+an alternative to setting the C<err_action> option to C<'fatal'> is:
+
+   MNI::Spawn::SetOptions (err_action => 'ignore');   # or 'warn'
+   Spawn ($cmd) && die "$cmd failed\n";
 
 Complete details of C<Spawn>'s operation are given in 
 L<"COMMAND COMPLETION">, L<"INTERFACE TO BATCH">,
