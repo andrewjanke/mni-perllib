@@ -9,7 +9,7 @@
 #@REQUIRES   : 
 #@CREATED    : 1997/05/13, Greg Ward
 #@MODIFIED   : 
-#@VERSION    : $Id: MNI.pm,v 1.1 1997-09-24 18:08:52 greg Rel $
+#@VERSION    : $Id: MNI.pm,v 1.2 1997-10-03 20:20:35 greg Rel $
 #@COPYRIGHT  : Copyright (c) 1997 by Gregory P. Ward, McConnell Brain Imaging
 #              Centre, Montreal Neurological Institute, McGill University.
 #
@@ -25,4 +25,4 @@ require 5.002;
 require Exporter;
 
 @MNI::ISA = ('Exporter');
-$MNI::VERSION = 0.04;
+$MNI::VERSION = '0.05';
