@@ -12,7 +12,7 @@
 #@CREATED    : 95/11/13, Greg Ward
 #@MODIFIED   : 98/11/06, Chris Cocosco: -ported from Batch.pm ... (STILL BETA!)
 #@MODIFIED   : (...see CVS for more history info)
-#@VERSION    : $Id: Batch.pm,v 1.18 2001-06-11 16:33:53 stever Exp $
+#@VERSION    : $Id: Batch.pm,v 1.19 2001-10-29 19:02:58 crisco Exp $
 #-----------------------------------------------------------------------------
 require 5.002;
 
@@ -655,8 +655,11 @@ sub FinishJob
 	     $Options{'synchronize'} eq "both");
        _emit_rmtmpdir_shellcode() 
 	 if ($Options{'export_tmpdir'} && $Options{'nuke_tmpdir'});
-       close (BATCH) || croak ("Error closing pipe to batch: $!\n");
-       croak ("`batch' exited with non-zero status code\n") if $?;
+       # [CC,2001/08/04] 
+       # it's debatable how to handle such batch misfires... 
+       # better carp (warn) instead of croak (die) (??)
+       close (BATCH) || carp ("Error closing pipe to batch: $!\n");
+       carp ("`batch' exited with non-zero status code: $? \n") if $?;
        sleep $sleeptime if $sleeptime > 0;
    }
 
