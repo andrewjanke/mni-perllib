@@ -12,7 +12,7 @@
 #@CREATED    : 95/11/13, Greg Ward
 #@MODIFIED   : 98/11/06, Chris Cocosco: -ported from Batch.pm ... (STILL BETA!)
 #@MODIFIED   : (...see CVS for more history info)
-#@VERSION    : $Id: Batch.pm,v 1.13 2000-01-16 20:04:28 stever Exp $
+#@VERSION    : $Id: Batch.pm,v 1.14 2000-03-13 23:13:08 stever Exp $
 #-----------------------------------------------------------------------------
 require 5.002;
 
@@ -281,6 +281,10 @@ sub _set_syncfile_name {
     $file = "$dir/$file";
 
     $SyncFiles{$JobPID}{$condition} = $file;
+}
+
+sub _reset_syncfile_name {
+    undef $SyncFiles{$JobPID};
 }
 
 
@@ -576,7 +580,7 @@ sub StartJob
 		       $Options{'synchronize'} eq 'both');
     my $sync_fail =  $sync_finish && $Options{'check_status'};
 
-    %SyncFiles = ();
+    _reset_syncfile_name();
     _set_syncfile_name( 'start' ) if $sync_start;
     _set_syncfile_name( 'finish' ) if $sync_finish;
     _set_syncfile_name( 'fail' ) if $sync_fail;
@@ -667,6 +671,9 @@ to sleep, after which the files are checked for at the frequency specified by
 the I<periodic_delay>.  You can also specify a I<timeout> parameter, after
 which time we give up waiting for the synchronization files.
 
+The return value is a list of array references.  Make sure C<Synchronize>
+is evaluated in array context.
+
 If synchronizing on I<start>, the return value is a reference to an array of
 job names that did indeed start.  If synchronizing on I<finish>, then two
 array refs are returned.  The first array holds the job names that finished,
@@ -703,7 +710,7 @@ sub Synchronize
    my $total_wait = $initial_delay;
    my (%synced) = ();
 
-   my $numjobs = scalar( grep { $_{$condition} } values %SyncFiles );
+   my $numjobs = scalar( grep { $_->{$condition} } values %SyncFiles );
    my $done = 0;
 
    while ($done < $numjobs)

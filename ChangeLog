@@ -1,3 +1,12 @@
+2000-03-13  Steve ROBBINS  <stever@bic.mni.mcgill.ca>
+
+	* MNI/Batch.pm (StartJob): don't clear entire set of SyncFiles,
+	only the ones corresponding to the PID of the starting job.
+	(Synchronize): fix bug that prevented counting number of outstanding
+	jobs; reported by Jason Lerch.
+
+	* t/batch-2.t: new.  Test Synchronize() function.
+
 2000-02-21  Steve Robbins  <steve@nyongwa.montreal.qc.ca>
 
 	* MNI/Startup.pm (startup): if TMPDIR is not defined, check for /usr/tmp,
