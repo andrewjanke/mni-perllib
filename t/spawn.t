@@ -6,6 +6,7 @@
 #    args updated independently of its parent
 
 use MNI::Spawn;
+use FileHandle;
 
 require "t/compare.pl";
 require "t/fork_test.pl";
@@ -17,7 +18,7 @@ sub announce { printf "test %d: %s\n", $i+1, $_[0] if $DEBUG }
 die "t/toy_ls not found (or not executable)\n"
    unless -x "t/toy_ls";
 
-print "1..53\n";
+print "1..56\n";
 
 ($ProgramName = $0);                    # needed by Spawn!
 
@@ -92,7 +93,7 @@ opendir (TDIR, ".") || die "couldn't opendir .: $!\n";
 @t_files = grep (/\.t$/, @files);
 closedir (TDIR);
 
-if ($DEBUG)
+if ($DEBUG >= 2)
 {
    print "files:\n  " . join ("\n  ", @files) . "\n";
    print "t_files:\n  " . join ("\n  ", @t_files) . "\n";
@@ -515,6 +516,27 @@ if (1)
          $out->[5] =~ /$err_msg/i &&
          @$err == 1 &&
          $err->[0] =~ /toy_ls crashed/);
+}
+
+# redirect to a filehandle
+if (1)
+{
+   announce "spawn: redirect to filehandle";
+   ($status,$out,$err) = fork_test (sub {
+      open (LOG, ">$outfile") || die "couldn't create $outfile: $!\n";
+      LOG->autoflush;
+      print LOG "junk in log file before spawning\n";
+      $spawner->spawn (["toy_ls", @t_files], stdout => ">&::LOG");
+   }, 0);
+
+   @outfile = file_contents ($outfile);
+   test ($status == 0 &&
+         (shift @$out) eq "** BEGIN TEST" &&
+         (pop @$out) eq "** END TEST" &&
+         @$out == 0 &&
+         @$err == 0 &&
+         (shift @outfile) eq 'junk in log file before spawning' &&
+         slist_equal (\@outfile, \@t_files));
 }
 
 $spawner->set_options (err_action => 'fatal');
@@ -953,6 +975,47 @@ if (1)
          @$err == 4 &&
          $err->[0] =~ /: couldn\'t find program/i &&
          $err->[1] =~ /spawn: warning: program.*not registered/ &&
+         $err->[2] =~ /spawn: warning: couldn\'t find program/ &&
+         $err->[3] =~ /crashed while running/);
+}
+
+if (1)
+{
+   announce "register_programs: specific program override";
+   ($status,$out,$err) = fork_test 
+      (sub
+       {
+          $ok = $spawner->register_programs ({ls => './toy_ls'});
+          die "unexpected result of register_programs" unless $ok;
+          return $spawner->spawn ("ls $files[0]");
+       }, 0);
+
+   test ($status == 0 &&
+         (shift @$out) eq "** BEGIN TEST" &&
+         (pop @$out) eq "** END TEST" &&
+         @$out == 2 &&
+         $out->[0] =~ m|\] ./toy_ls $files[0]$| &&
+         $out->[1] eq $files[0] &&
+         @$err == 0);         
+}
+
+if (1)
+{
+   announce "register_programs: bogus override";
+   ($status,$out,$err) = fork_test 
+      (sub
+       {
+          $ok = $spawner->register_programs ({ls => 'blargsnob'});
+          die "unexpected result of register_programs" if $ok;
+          return $spawner->spawn ("ls $files[0]");
+       }, 1);
+
+   test ($status != 0 &&
+         (shift @$out) eq "** BEGIN TEST" &&
+         @$out == 0 &&
+         @$err == 4 &&
+         $err->[0] =~ /doesn\'t exist or not executable/i &&
+         $err->[1] =~ /spawn: warning: program \"ls\" not registered/ &&
          $err->[2] =~ /spawn: warning: couldn\'t find program/ &&
          $err->[3] =~ /crashed while running/);
 }
