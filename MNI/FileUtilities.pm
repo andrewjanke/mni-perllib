@@ -17,7 +17,7 @@
 #@REQUIRES   : Exporter
 #@CREATED    : 1997/04/25, Greg Ward (from file_utilities.pl, revision 1.16)
 #@MODIFIED   : 
-#@VERSION    : $Id: FileUtilities.pm,v 1.3 1997-07-10 13:17:18 greg Exp $
+#@VERSION    : $Id: FileUtilities.pm,v 1.4 1997-07-17 21:16:03 greg Exp $
 #@COPYRIGHT  : Copyright (c) 1997 by Gregory P. Ward, McConnell Brain Imaging
 #              Centre, Montreal Neurological Institute, McGill University.
 #
@@ -392,18 +392,21 @@ sub check_output_path
    {
       $last_dir = pop @dirs;            # get the last directory for separate
                                         # checking (must exist & be writeable)
-      $partial = '';
+      $partial = ($dirs[0] eq '')       # absolute path? (ie. '/foo/bar/...')
+         ? '/'                          # then start at root
+         : ''                           # else ('foo/bar/...') start right here
    }
 
 #   print "path     = $path\n";
 #   print "last_dir = $last_dir\n";
 #   print "dirs     = (" . join (',', @dirs) . ")\n";
+#   print "partial  = \"$partial\"\n";
 
    # Check all but the last directory component: each must be a directory.
 
    for $dir (@dirs)
    {
-      $partial .= "$dir/";                 # /foo/ to /foo/bar
+      $partial .= "$dir";
 #      print "checking: $partial\n";
 
       # If $partial doesn't exist (dangling links count as "exist" in this
@@ -431,7 +434,7 @@ sub check_output_path
       # because it doesn't matter yet -- only the last directory 
       # has to be writeable, so it's handled separately.
 
-#      $partial .= '/';
+      $partial .= '/' unless $partial eq '/';
    }
 
    # Now check the last directory; must be a directory and writeable.
