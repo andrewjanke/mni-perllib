@@ -1,0 +1,259 @@
+                          The MNI Perl Library
+                              release 0.05
+
+                   Greg Ward (greg@bic.mni.mcgill.ca)
+
+This is free software, and may be distributed under the same terms as
+Perl itself.
+
+
+INTRODUCTION
+------------
+
+The MNI Perl Library is a collection of Perl modules originally designed
+to help writing glorified shell scripts -- that is, programs that
+(mainly) run other programs.  Its intended area of use is in writing
+Perl programs that are long-running, but spend most of their time
+waiting around for low-level number crunching programs to do the real
+work.  (The reason these types of programs are called "glorified shell
+scripts" is because they often start out as shell scripts, and are only
+converted to Perl when it is realized that some degree of arithmetic or
+logic is needed to control the program in an intelligent and efficient
+manner, but the pain and aggravation of doing this in any shell is too
+much -- which of course is the niche that Perl has always filled
+nicely.)
+
+As it happens, many of the modules in the library are quite handy in all
+sorts of areas, but the assumption that programs are used for
+long-running scientific computation means that certain parts of the
+library are biased in favour of rigor, robustness and reliability rather
+than speed -- after all, what's half a second of compiling a bunch of
+Perl code compared to twenty minutes (or twenty hours) of
+number-crunching?  (Spending that extra half-second is even less
+resented when, six months down the road, it helps you track down exactly
+how a particular result was generated at a particular time.  Making this
+sort of rigorous logging easy is one of the main goals of the library.)
+
+Installers (and maybe users, if they're prone to reading source code) of
+the MNI AutoReg package may recognize transmogrified file and package
+names; in fact, this library is a revamped, overhauled, thoroughly
+tested and documented release of the Perl library that has been tucked
+into the MNI AutoReg distribution since its first release in late 1995.
+
+This release of the library mainly duplicates the functionality of the
+"old" library, and roughly parallels the code released with MNI AutoReg
+0.98.  It is intended mainly as a companion to John Sled's N3 package,
+and functionality well above and beyond the present level will be added
+in the future.  Future releases of MNI AutoReg -- and, it is hoped, much
+other brain-imaging software from the MNI -- will rely on the MNI Perl
+Library.
+
+
+PORTABILITY
+-----------
+
+The library is primarily intended for use on POSIX/Unix systems.  The
+MNI::FileUtilities and MNI::PathUtilities modules in particular are full
+of assumptions about the nature of filenames, the filesystem, and file
+permissions.  In addition, I have freely used long filenames (and
+subroutine names) that will cause problems on brain-damaged systems with
+pathetically short filenames.
+
+In short, the library will never, ever work on MS-DOS or its ilk.  With
+considerable work, it might conceivably work on decent non-Unix systems
+like OS/2 or VMS -- but certainly not in this release.  If you find it
+exceedingly useful in Unix and wish to see similar functionality for,
+say, VMS or OS/2, you're welcome to supply suggestions, fixes,
+portability enhancements, etc.  Unless you ask and offer to help,
+though, don't expect me to spend time porting the library to systems I
+never use.
+
+The test suite makes many more assumptions than the actual library about
+the nature of the system on which it's running -- for instance, / must
+be a read-only directory, /dev/null must exist, /tmp must be a writeable
+directory, certain conditions must elicit particular error messages, and
+so forth.  The test programs are written such that they should crash
+noisily if any of these assumptions are not met; if you see errors of
+that kind, it does not necessarily mean the library is buggy or your
+system is non-standard.  It may mean that I have assumed too much about
+the typical Unix system, in which case I will have to fix the test
+suite.  Also, failed tests do not necessarily mean the library is buggy;
+again it may mean that I have assumed too much.  In any case, I want to
+hear about such problems, so please notify me if you encounter them!
+
+The library was developed under IRIX 5.3, and thus has been extensively
+tested there.  It is also known to work (i.e. pass all its tests) under
+Linux/i86 2.0 and SunOS 4.1.3.  Since this is the first public release
+of the library, I am interested in finding out how well the library
+works on other Unix systems -- good news is of course particularly
+welcome, but I will attempt to fix any portability problems you may
+encounter.
+
+
+BUILDING
+--------
+
+The library is built, tested, and installed like any other Perl module
+(or bundle of modules):
+
+   perl Makefile.PL
+   make
+   make test
+   make install
+
+Some notes on this process: 
+
+  1) If you're not running at least Perl 5.002, stop now.  You will need
+     to download, configure, build, and install an up-to-date version of
+     Perl before going any farther.  This is not an entirely trivial
+     exercise, but it's well worth the trouble.  (For starters, you get
+     to use all the nifty imaging tools that rely on Perl and are slowly
+     trickling out of the MNI.)
+
+     Note that some sites may already have Perl 5 installed as "perl5";
+     plain old "perl" might be the obsolete Perl 4 for backwards
+     compatibility.  If you're not sure whether you have Perl 5
+     installed, ask your system administrator before barging into
+     building Perl.
+
+     The latest version of Perl can be downloaded from CPAN (the
+     Comprehensive Perl Archive Network).  The easiest way to get the
+     source is to connect your web browser to 
+
+        http://www.perl.org/CPAN/src/5.0/
+
+     and download the latest distribution (perl5.004_03.tar.gz as of
+     this writing).
+
+     Alternately, we try to keep a reasonably up-to-date version of Perl
+     on our ftp site, in the same directory where the MNI Perl Library
+     itself is based:
+
+        ftp://ftp.bic.mni.mcgill.ca/pub/perl
+
+     In any case, to build Perl unpack the archive and follow the
+     instructions in the INSTALL file.
+
+  2) Running Makefile.PL is not completely automatic -- you will be
+     asked to supply the name of a directory that will be used as a
+     repository of supplementary data used by various brain-imaging
+     software packages from the MNI.  This directory is then hard-coded
+     into the MNI::DataDir module, which will be used by various MNI
+     packages to install and find supplementary files such as model data
+     or configuration files.
+
+     For instance, the N3 package (the first release to use this scheme)
+     will install some model data to the 'N3' subdirectory under
+     whichever directory you specify here.  For the time being, disk
+     space is not a concern (N3 only installs about 64k of data), but
+     you should consider the future possibility of large amounts of data
+     being installed here.  For instance, the MNI AutoReg package will
+     soon be adapted to use the MNI::DataDir scheme, and it requires
+     about 10 MB of space for its model data.  ANIMAL, an extension of
+     MNI AutoReg to non-linear registration, will require a further 20
+     MB of space.
+
+     You can always change your mind at a later date, either by
+     populating the directory you specify now with symbolic links to the
+     real data directories, or by re-building and re-installing the MNI
+     Perl Library with a different default directory.  However, it can't
+     hurt to think carefully about how your system is organized and
+     where static data used by analysis programs should live.  The
+     default, '/usr/local/mni/data', is rather specific to our setup, so
+     you probably shouldn't use that without due consideration -- do you
+     really want a whole '/usr/local/mni' tree?  (You might, if you're
+     planning on installing lots of our software in the future.)  If you
+     have a specific area of your filesystem for data -- for instance,
+     we use /data for this purpose -- you might want to put the data
+     directory there.
+
+  3) If you are going to install the MNI Perl Library in the standard
+     system Perl library directory (the recommended course of action),
+     you will need super-user (root) privileges to run the "make
+     install" command.
+
+     If you can't or do not wish to install the library alongside the
+     system Perl library, you will have to add a few parameters when
+     running Makefile.PL.  The easiest way to do this is to install the
+     library to ~/lib/perl5; this is done by simply setting the "prefix"
+     when running Makefile.PL:
+
+        perl Makefile.PL PREFIX=~ INSTALLDIRS=perl
+
+     (The INSTALLDIRS=perl keeps the library from being installed to
+     ~/lib/perl5/site_perl, which doesn't make a lot of sense -- if the
+     library is under your personal ~/lib directory, of course it's
+     site-specific!  Unless, of course, the standard Perl library is
+     also installed there -- in which case you don't need to specify
+     PREFIX at all; you just build the library as usual.)
+
+  4) If you do have super-user privileges, it is recommended that you
+     *not* use them for the "make test" step.  This is because some of
+     tests exercise the library's error-handling capabilities, and
+     some of the errors handled are of the "permission denied" variety.
+     Since the super-user by definition never encounters these errors,
+     the test suite detects when it is being run by root and skips those
+     tests.  Thus, running "make test" as root means a few bits of the
+     library will not be completely exercised.
+
+
+MODULES
+-------
+
+The modules fall into several thematically arranged groups.
+
+First, the heart and soul of the library is formed by MNI::Startup and
+MNI::Spawn; use these two modules in all your Perl programs, and you
+will go a long way towards having programs that thoroughly log
+themselves and each other, allowing you to reconstruct a particular
+execution long after the event.
+
+   MNI::Startup      common startup/shutdown code for writing
+                     intelligent, robust, flexible programs: generates
+                     temporary directory name and various other
+                     ubiquitous values on startup; provides a
+                     command-line option table (for use with
+                     Getopt::Tabular, also included in the library) to
+                     allow the user to override these values; and takes
+                     care of cleaning up the temporary directory in any
+                     form of program termination short of a catastrophic
+                     system crash.
+
+   MNI::Spawn        run child programs with (optional) exhaustive
+                     logging of command lines, output redirection/
+                     capture, and many other features intended to
+                     greatly increase reliability and usability.  (Think
+                     of MNI::Spawn as a very limited Unix shell, but
+                     with a Perl interface rather than a command line)
+
+There are also several modules that are collections of more-or-less
+independent utility subroutines:
+
+   MNI::FileUtilities    manipulate/check/validate/search files and directories
+   MNI::PathUtilities    recognize, parse, and tweak POSIX file and path names
+   MNI::NumericUtilities common trivial numeric operations
+   MNI::MincUtilities    various MINC file hacks using external utilities
+   MNI::MiscUtilities    miscellaneous and unclassifiable utility routines
+
+
+There is a lone module (so far) in its own category (eventually more
+will join it, and I'll figure out what the common theme is when that
+happens):
+
+   MNI::DataDir      find directory containing supplementary data for a 
+                     package; used to ensure a single method for finding
+                     such data for all MNI brain-imaging software packages
+
+Finally, there is one "auxiliary module", which is sufficiently
+general-purpose that it's not part of the "MNI::" namespace, but stands
+on its own (and in fact has been independently released):
+
+   Getopt::Tabular   table-based command-line parsing with strong,
+                     customizable checking of arguments for type and
+                     number
+
+One or two more general-purpose modules will join Getopt::Tabular in
+future releases.
+
+Any problems with the library should be reported to
+greg@bic.mni.mcgill.ca.
