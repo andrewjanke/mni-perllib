@@ -17,6 +17,7 @@ t/compare.pl
 t/testvol.mnc
 t/getopt.t
 t/datadir.t.in
+t/toy_ls.in
 MNI/FileUtilities.pm
 MNI/MiscUtilities.pm
 MNI/PathUtilities.pm
