@@ -12,7 +12,7 @@
 #@REQUIRES   : Exporter
 #@CREATED    : 1997/08/07, Greg Ward (from minc_utilities.pl, revision 1.16)
 #@MODIFIED   : 
-#@VERSION    : $Id: MincUtilities.pm,v 1.7 1997-10-03 13:28:06 greg Exp $
+#@VERSION    : $Id: MincUtilities.pm,v 1.8 1997-10-03 13:35:25 greg Rel $
 #@COPYRIGHT  : Copyright (c) 1997 by Gregory P. Ward, McConnell Brain Imaging
 #              Centre, Montreal Neurological Institute, McGill University.
 #
@@ -75,30 +75,27 @@ MNI::MincUtilities - various MINC file hacks using external utilities
 
 =head1 SYNOPSIS
 
+   use MNI::MincUtilities qw(:range);
    $min = volume_min ($vol);
-
    $max = volume_max ($vol);
-
    ($min, $max) = volume_minmax ($vol);
 
+   use MNI::MincUtilities qw(:threshold);
    $threshold = percent_threshold ($min, $max, $percent);
-
    $threshold = auto_threshold ($vol);
 
-   $cog = volume_cog ($vol);
-
+   use MNI::MincUtilities qw(:history);
    @history = get_history ($vol);
-
    put_history ($vol, @history);
-
    update_history ($vol [, $replace [, $history]]);
 
+   use MNI::MincUtilities qw(:geometry);
+   $cog = volume_cog ($vol);
    volume_params ($vol, \@start, \@step, \@length, \@dir_cosines, \@dims);
-
    ($order, $permutation) = get_dimension_order ($vol);
 
+   use MNI::MincUtilities qw(:args);
    @resample_args = compute_resample_args (\@start, \@extent, \@step);
-
    @reshape_args = compute_reshape_args (\@order, \@oldstart, \@oldstep,
                                          \@start, \@extent, \@step);
 

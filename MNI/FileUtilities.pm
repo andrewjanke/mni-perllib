@@ -17,7 +17,7 @@
 #@REQUIRES   : Exporter
 #@CREATED    : 1997/04/25, Greg Ward (from file_utilities.pl, revision 1.16)
 #@MODIFIED   : 
-#@VERSION    : $Id: FileUtilities.pm,v 1.11 1997-10-03 13:25:04 greg Exp $
+#@VERSION    : $Id: FileUtilities.pm,v 1.12 1997-10-03 13:31:57 greg Rel $
 #@COPYRIGHT  : Copyright (c) 1997 by Gregory P. Ward, McConnell Brain Imaging
 #              Centre, Montreal Neurological Institute, McGill University.
 #
@@ -74,29 +74,23 @@ MNI::FileUtilities - manipulate/check/validate/search files and directories
 
 =head1 SYNOPSIS
 
-  use MNI::FileUtilities;
+   use MNI::FileUtilities qw(:check);
+   check_output_dirs (@dirs) || exit 1;
+   check_output_path ($path) || exit 1;
+   check_input_dirs (@dirs) || exit 1;
+   $file = test_file ($test, $file) || die "couldn't find $file\n";
+   check_files (@files) || exit 1;
 
-  check_output_dirs (@dirs) || exit 1;
+   use MNI::FileUtilities qw(:search);
+   $dir = search_directories ($file, \@search_dirs [, $test]) 
+      || die "couldn't find $file\n";
+   $program = find_program ($program [, \@path]) || exit 1;
+   (@programs = find_programs (\@programs [, \@path])) || exit 1;
 
-  check_output_path ($path) || exit 1;
-
-  check_input_dirs (@dirs) || exit 1;
-
-  $file = test_file ($test, $file) || die "couldn't find $file\n";
-
-  check_files (@files) || exit 1;
-
-  $dir = search_directories ($file, \@search_dirs [, $test]) 
-     || die "couldn't find $file\n";
-
-  $program = find_program ($program [, \@path]) || exit 1;
-
-  (@programs = find_programs (\@programs [, \@path])) || exit 1;
-
-  $file = generate_numbered_filename ($base, $ext [, $add_date]);
-
-  ($type, $blocksize, $blocks, $blocksfree, $files, $ffree) = 
-    statfs ($path);
+   use MNI::FileUtilities qw(:misc);
+   $file = generate_numbered_filename ($base, $ext [, $add_date]);
+   ($type, $blocksize, $blocks, $blocksfree, $files, $ffree) = 
+      statfs ($path);
 
 =head1 DESCRIPTION
 

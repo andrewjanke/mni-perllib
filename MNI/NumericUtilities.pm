@@ -12,7 +12,7 @@
 #@REQUIRES   : Exporter
 #@CREATED    : 1997/06/06, Greg Ward (from numeric_utilities.pl, revision 1.9)
 #@MODIFIED   : 
-#@VERSION    : $Id: NumericUtilities.pm,v 1.2 1997-10-03 13:28:32 greg Exp $
+#@VERSION    : $Id: NumericUtilities.pm,v 1.3 1997-10-03 13:37:23 greg Rel $
 #@COPYRIGHT  : Copyright (c) 1997 by Gregory P. Ward, McConnell Brain Imaging
 #              Centre, Montreal Neurological Institute, McGill University.
 #
@@ -47,6 +47,8 @@ __END__
 MNI::NumericUtilities - common trivial numeric operations
 
 =head1 SYNOPSIS
+
+   use MNI::NumericUtilities qw(:all);
 
    in_range ($val, $lo, $hi);
 

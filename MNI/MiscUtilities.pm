@@ -14,7 +14,7 @@
 #@REQUIRES   : Exporter
 #@CREATED    : 1997/04/24, Greg Ward (from misc_utilities.pl)
 #@MODIFIED   : 
-#@VERSION    : $Id: MiscUtilities.pm,v 1.6 1997-10-03 13:26:59 greg Exp $
+#@VERSION    : $Id: MiscUtilities.pm,v 1.7 1997-10-03 13:37:04 greg Rel $
 #@COPYRIGHT  : Copyright (c) 1997 by Gregory P. Ward, McConnell Brain Imaging
 #              Centre, Montreal Neurological Institute, McGill University.
 #
@@ -54,6 +54,8 @@ __END__
 MNI::MiscUtilities - miscellaneous and unclassifiable utility routines
 
 =head1 SYNOPSIS
+
+   use MNI::MiscUtilities qw(:all);
 
    $when = timestamp ([TIME])
 
