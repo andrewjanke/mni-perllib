@@ -8,7 +8,7 @@
 #@REQUIRES   : Exporter
 #@CREATED    : 1997/07/25, Greg Ward (from old Startup.pm, rev. 1.23)
 #@MODIFIED   : 
-#@VERSION    : $Id: Startup.pm,v 1.9 1997-09-30 18:10:30 greg Exp $
+#@VERSION    : $Id: Startup.pm,v 1.10 1997-09-30 20:37:37 greg Rel $
 #@COPYRIGHT  : Copyright (c) 1997 by Gregory P. Ward, McConnell Brain Imaging
 #              Centre, Montreal Neurological Institute, McGill University.
 #
@@ -24,9 +24,6 @@ use vars qw(@EXPORT_OK %EXPORT_TAGS);
 use vars qw($ProgramDir $ProgramName $StartDirName $StartDir);
 use vars qw($Verbose $Execute $Clobber $Debug $TmpDir $KeepTmp @DefaultArgs);
 use Carp;
-use Cwd;
-
-use MNI::MiscUtilities qw(userstamp timestamp shellquote);
 
 require 5.002;
 require Exporter;
@@ -179,6 +176,13 @@ my %signals =
     USR1 => 'user-defined signal 1',
     USR2 => 'user-defined signal 2');
 
+# $orig_tmpdir is the temporary directory name actually cooked up in
+# &startup; the user can only touch $TmpDir, the global version of this.
+# That way, we won't nuke a custom temp dir on exit, only the one
+# that we cook up.
+
+my $orig_tmpdir;
+
 
 # Here we process the import list.  We walk over the entire list once,
 # checking it for validity, setting the appropriate option flags; then
@@ -229,18 +233,15 @@ namespace if the C<progname> option is true (which, like with all of
 F<MNI::Startup>'s options, is the default).  If there are no slashes in
 C<$0>, then C<$ProgramDir> will be empty.
 
-Next, F<MNI::Startup> gets the current directory (using C<Cwd::getcwd>)
-and saves it in C<$StartDir>; the last component of this directory is
-also extracted and saved in C<$StartDirName> (hey, you never know when
-you might want it).
-
-Note that the C<progname> and C<startdir> options only control whether
-F<MNI::Spawn> actually exports these four variables into your program's
-namespace---they are computed regardless of your wishes, because they are
-needed elsewhere in the module and possibly in other modules
-(F<MNI::Spawn>, for example, uses C<$main::ProgramName>).  (This could be
-conceived as a minor disadvantage because of the expense of finding the
-current directory.)
+Next, if necessary, F<MNI::Startup> gets the current directory (using
+C<Cwd::getcwd>) and saves it in C<$StartDir>; the last component of this
+directory is also extracted and saved in C<$StartDirName> (hey, you
+never know when you might want it).  This can be turned off by setting
+the C<startdir> option to false; under certain obscure circumstances,
+though, F<MNI::Startup> will decide that it really does need to know the
+startup directory and will call C<Cwd::getcwd> anyways.  In any case,
+the two variables are only exported to your namespace if C<startdir> is
+true.
 
 =cut
 
@@ -257,8 +258,8 @@ tailored solution to these problems, including global variables to guide
 the flow of control of your program and an option sub-table (for use
 with F<Getopt::Tabular>) to allow the end user of your program to set
 those globals.  These variables are only initialized and exported if the
-C<optvars> switch is true, and the option table is only initialized and
-exported if the C<opttable> switch is true.
+C<optvars> option is true, and the option table is only initialized and
+exported if the C<opttable> option is true.
 
 =head2 Option variables
 
@@ -312,33 +313,39 @@ Specifies where to write temporary files; this is initialized to a
 unique directory constructed from C<$ProgramName> and the process id
 (C<$$>).  This (hopefully) unique name is appended to C<$ENV{'TMPDIR'}>
 (or C<'/usr/tmp'> if the TMPDIR environment variable doesn't exist) to
-make the complete directory.  If this directory is found already to
-exist, the module C<croak>s.  (This shouldn't happen, but it's
-conceivably possible.  For instance, some previous run of your program
-might not have properly cleaned up after itself, or there might be
-another program with the same name and temporary directory naming scheme
-that didn't clean up after itself.  Both of these, of course, assume
-that the previous run of the ill-behaved progam just happened to have
-the same process ID as the current run of your program---hence, the
-small chance of this happening.)
+make the complete directory.  If C<$ENV{'TMPDIR'}> specifies a relative
+path, C<$TmpDir> is made into an absolute path by prepending the current
+directory (from C<$StartDir>---this is the "certain obscure
+circumstance" where F<MNI::Startup> ignores the C<startdir> option and
+calls C<Cwd::getcwd> anyways).
+
+If this directory is found to exist already, the module C<croak>s.
+(This shouldn't happen, but it's conceivably possible, and it's not
+necessarily a bug in F<MNI::Startup>.  For instance, some previous run
+of your program might not have properly cleaned up after itself, or
+there might be another program with the same name and temporary
+directory naming scheme that didn't clean up after itself.  Both of
+these, of course, assume that the previous run of the ill-behaved progam
+just happened to have the same process ID as the current run of your
+program---hence, the small chance of this happening.)
 
 Note that the directory is I<not> created, because the user might
 override it with the C<-tmpdir> command-line option.  See
 C<MNI::FileUtilities::check_output_dirs> for a safe and convenient way
 to create output directories such as C<$TmpDir>.
 
-On shutdown, however, F<MNI::Startup> will clean up this temporary
-directory by running C<rm -rf> on it.  See L<"CLEANUP"> for details.
+On shutdown, F<MNI::Startup> will clean up this temporary directory for
+you by running C<rm -rf> on it.  See L<"CLEANUP"> for details.
 
 =item C<$KeepTmp> (C<-keeptmp>/C<-cleanup>) (initialized to: 0)
 
-Can be used to disable cleaning up temporary files.  This is used by
-F<MNI::Startup> on program shutdown to determine whether or not to
-cleanup C<$TmpDir>.  You might also use it in your program if you
-normally delete some temporary files along the way; if the user puts
-C<-keeptmp> on the command line (thus setting C<$KeepTmp> true), you could
-respect this by not deleting anything so that all temporary files are
-preserved at the end of your program's run.
+Can be used to disable cleaning up temporary files.  This, along with
+several other conditions, is used by F<MNI::Startup> on program shutdown
+to determine whether or not to cleanup C<$TmpDir>.  You might also use
+it in your program if you normally delete some temporary files along the
+way; if the user puts C<-keeptmp> on the command line (thus setting
+C<$KeepTmp> true), you could respect this by not deleting anything so
+that all temporary files are preserved at the end of your program's run.
 
 =back
 
@@ -381,7 +388,7 @@ will I<not> be caught this time, so your program will terminate
 abnormally just as though F<MNI::Startup>'s signal handler had never
 been there.  The main advantage of this is that whichever program ran
 your program can examine its termination status and determine that it
-was indeed killed by a signal, rather than C<exit>ing normally
+was indeed killed by a signal, rather than by C<exit>ing normally.
 
 The signals handled fall into three groups: those you might normally
 expect to encounter (HUP, INT, QUIT, PIPE and TERM); those that indicate
@@ -392,8 +399,7 @@ on a given platform, so F<MNI::Startup> only installs handlers for the
 subset of these signals that Perl knows about.  (With versions of Perl
 previous to 5.004, this information is not available, so F<MNI::Startup>
 in that case installs handlers for the five "expected" signals only.)
-Currently, no distinction is made between "expected" and "unexpected"
-signals.
+Currently, no distinction is made between the various groups of signals.
 
 The F<sigtrap> module provided with Perl 5.004 provides a more flexible
 approach to signal handling, but doesn't provide a signal handler to
@@ -403,12 +409,8 @@ C<\&MNI::Startup::catch_signal> as your signal handler to F<sigtrap>.
 Be sure that you also include C<nosig> in F<MNI::Startup>'s import list,
 to disable its signal handling.  (The version of F<sigtrap> distributed
 with Perl 5.003 and earlier isn't nearly as flexible, so there's not
-much point using F<sigtrap> instead of F<MNI::Startup>'s signal handling
-unless you're running Perl 5.004 or later.)
-
-To give credit where it is due, the list of signals handled and some of
-the language used to describe them are based on the F<sigtrap>
-documentation from the Perl 5.004 distribution.
+much advantage in using F<sigtrap> over F<MNI::Startup>'s signal
+handling unless you're running Perl 5.004 or later.)
 
 =cut
 
@@ -433,14 +435,32 @@ sub startup
    ($ProgramDir,$ProgramName) = $0 =~ m|^(.*/)?([^/]*)$|;
    $ProgramDir = '' unless defined $ProgramDir;
 
-   # Note that if the cwd on startup in '/', $StartDirName will be undefined.
-   # This makes sense to me, as there is simply no "trailing name" component
-   # in '/' -- we can't just pretend it's there but empty (like with 
-   # a missing directory component).
+   # We need to find the starting directory if the 'startdir' option is
+   # true, OR if we're going to need it later to make $TmpDir absolute.
+   # The latter is true when the TMPDIR environment variable is defined
+   # but not an absolute path.
 
-   $StartDir = getcwd ();
-   $StartDir .= '/' unless substr ($StartDir, -1, 1) eq '/';
-   ($StartDirName) = $StartDir =~ m|/([^/]+)/$|;
+   if ($options{startdir} ||
+       ($ENV{'TMPDIR'} && substr ($ENV{'TMPDIR'}, 0, 1) ne '/'))
+   {
+      # This little trickery lets us get away with not 'use'ing Cwd --
+      # we make Carp export its symbols into Cwd at compile-time, but
+      # don't load Cwd.pm unless it's definitely needed.  This can 
+      # shave a few tenths of a second off the overhead of using
+      # MNI::Startup.
+
+      BEGIN { package Cwd; import Carp; }
+      require Cwd;
+
+      # Note that if the cwd on startup is '/', $StartDirName will be
+      # undefined.  This makes sense to me, as there is simply no
+      # "trailing name" component in '/' -- we can't just pretend it's
+      # there but empty (like with a missing directory component).
+
+      $StartDir = Cwd::getcwd ();
+      $StartDir .= '/' unless substr ($StartDir, -1, 1) eq '/';
+      ($StartDirName) = $StartDir =~ m|/([^/]+)/$|;
+   }
 
    if ($options{optvars})
    {
@@ -450,9 +470,12 @@ sub startup
       $Debug = 0;
 
       my ($basetmp) = (defined ($ENV{'TMPDIR'}) ? $ENV{'TMPDIR'} : '/usr/tmp');
-      $TmpDir = ($basetmp . "/${ProgramName}_$$/");
+      $basetmp = $StartDir . $basetmp unless substr ($basetmp, 0, 1) eq '/';
+      $basetmp .= '/' unless substr ($basetmp, -1, 1) eq '/';
+      $TmpDir = ($basetmp . "${ProgramName}_$$/");
       croak "$ProgramName: temporary directory $TmpDir already exists"
          if -e $TmpDir;
+      $orig_tmpdir = $TmpDir;
       $KeepTmp = 0;
    }
 
@@ -506,34 +529,28 @@ From the kernel's point-of-view, there are only two ways in which a
 process terminates: normally and abnormally.  Programmers generally
 further distinguish between two kinds of normal termination, namely
 success and failure.  In Perl, success is usually indicated by calling
-C<exit 0> or by running off the end of the main program; failure is
+C<exit> or by running off the end of the main program; failure is
 indicated by calling C<exit> with a non-zero argument or C<die> outside
-of any C<eval> (i.e., an uncaught exception).  Abnormal termination is
-what happens when we are hit by a signal, whether it's caused internally
+of any C<eval> (an uncaught exception).  Abnormal termination is what
+happens when we are hit by a signal, whether it's caused internally
 (e.g. a segmentation violation or floating-point exception) or
 externally (such as the user hitting Ctrl-C or another process sending
 the C<TERM> signal).
 
-In Perl programs that use F<MNI::Startup>, most abnormal terminations will
-be turned into normal terminations, because the installed signal handler
-simply C<die>s.  Thus, the events that take place for a normal "failure"
-shutdown (C<die> or C<exit> with non-zero argument) also take place when we
-are killed by a signal.  In particular, if the C<cleanup> option is true,
-the C<$KeepTmp> global is false, and C<$TmpDir> names an actual directory,
-we execute C<rm -rf> on that directory.  (CPU times are not printed,
-because this action is suppressed for failure exits.)
-
-To handle the case where C<$TmpDir> is a relative directory and your
-program C<chdir>'s away from its start directory, F<MNI::Startup> will
-C<chdir> back to C<$StartDir> before C<rm -rf>'ing C<$TmpDir> in such
-circumstances.  If the C<chdir> fails, a warning is printed and the
-cleanup is skipped.  Because of this, you should always create your
-temporary directory before doing any C<chdir>'ing away from the start
-directory.  (Note that C<$TmpDir> can only be relative if you change it,
-either through an explicit assignment or by the caller of your program
-using the C<-tmpdir> option.  This will happen without any involvement
-from F<MNI::Startup>, though, so it has to take the possibility into
-account.)
+Regardless of how your program terminates, F<MNI::Startup> steps in to
+perform some cleaning up.  In particular, it attempts to run C<rm -rf>
+on the temporary directory originally named by C<$TmpDir>, but only if
+the C<cleanup> option is true, the C<$KeepTmp> global is false, and the
+temporary directory actually exists.  Note that if you change C<$TmpDir>
+(or if the end-user changes it with the C<-tmpdir> command-line option),
+then F<MNI::Startup> will I<not> clean up the new value of C<$TmpDir>.
+(However, if you use the original value of C<$TmpDir> for some files and
+then change its value and write new stuff in the new directory, then the
+original directory will be cleaned up---just not the new one.)  The
+rationale for this behaviour is that if the user (or the programmer)
+goes to the trouble of specifying a custom temporary directory, they
+probably want the files in it to last longer than your program's current
+execution.
 
 =cut
 
@@ -546,8 +563,10 @@ account.)
 # executes this END block, which calls cleanup; we then return to Perl's
 # shutdown sequence (including possibly any other END blocks).  Abnormal
 # exits are triggered by signals; we catch a generous helping of signals
-# with &catch_signal, which then calls die.  From here, the END block
-# takes over.
+# with &catch_signal, which prints a message to say what signal killed
+# us, calls &cleanup (to emulate the END block), uninstalls itself, and
+# sends the same signal again to ensure that our parent knows we were
+# killed by a signal.
 
 sub cleanup
 {
@@ -573,20 +592,12 @@ sub cleanup
 	      $user, $system, $user+$system;
    }
 
-   if ($options{cleanup} && !$KeepTmp && defined $TmpDir && -d $TmpDir)
+   if ($options{cleanup} && !$KeepTmp && 
+       defined $orig_tmpdir && -d $orig_tmpdir)
    {
       local $?;                         # so we don't clobber exit status!
-
-      if ($TmpDir !~ m|^/| && ! chdir $StartDir)
-      {
-         warn "cleanup: couldn't chdir to \"$StartDir\": $! " .
-              "(not cleaning up)\n";
-      }
-      else
-      {
-         system 'rm', '-rf', $TmpDir;
-         warn "\"rm -rf $TmpDir\" failed\n" if $?;
-      }
+      system 'rm', '-rf', $orig_tmpdir;
+      warn "\"rm -rf $orig_tmpdir\" failed\n" if $?;
    }
 }
 
@@ -706,6 +717,7 @@ set?" shenanigans by simply setting FORCE to true.
 #-----------------------------------------------------------------------------
 sub self_announce
 {
+   require MNI::MiscUtilities;
    my ($log, $program, $args, $force) = @_;
 
    croak "self_announce: if supplied, \$log must be an open filehandle"
@@ -723,8 +735,9 @@ sub self_announce
          
 
    printf $log ("[%s] [%s] running:\n", 
-                userstamp (undef, undef, $StartDir), timestamp ());
-   print $log "  $program " . shellquote (@$args) . "\n\n";
+                MNI::MiscUtilities::userstamp (undef, undef, $StartDir),
+                MNI::MiscUtilities::timestamp ());
+   print $log "  $program " . MNI::MiscUtilities::shellquote (@$args) . "\n\n";
 }
 
 
