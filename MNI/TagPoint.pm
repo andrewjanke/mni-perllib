@@ -37,9 +37,9 @@ sub new {
     my $self = 
       { volume1 => undef,
 	volume2 => undef,
-	weight => 0,
-	structure_id => -1,
-	patient_id => -1,
+	weight => undef,
+	structure_id => undef,
+	patient_id => undef,
 	label => undef,
 	@_,     # allow caller to override any of the above
       };

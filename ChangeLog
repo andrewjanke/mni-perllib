@@ -1,3 +1,9 @@
+2001-07-11  Chris COCOSCO  <crisco@luciana.bic.mni.mcgill.ca>
+
+	* MNI/TagPoint.pm (new) : weight, structure_id, structure_id
+	now initialized by default to 'undef' (makes more sense this
+	way...)
+
 2001-07-04  Chris COCOSCO  <crisco@feeble.bic.mni.mcgill.ca>
 
 	* MNI/TagSet.pm (load) : fixed input parsing to match the tag
