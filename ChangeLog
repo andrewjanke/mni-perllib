@@ -1,3 +1,13 @@
+2000-09-19  Steve ROBBINS  <stever@bic.mni.mcgill.ca>
+
+	* MNI/TagSet.pm:
+	* MNI/TagPoint.pm: new.  Future replacement of MNI::Tag.
+	A TagSet corresponds to a `.tag' file; it holds a list of
+	TagPoint objects.  The TagPoint objects allow read access to
+	all fields in the tag.
+
+	* t/tag.t: new.  Exercise the MNI::TagSet.
+
 2000-09-14  Steve Robbins  <steve@nyongwa.montreal.qc.ca>
 
 	* MNI/Tag.pm: add POD documentation of all user-level functions.
