@@ -19,16 +19,12 @@ CODE
 AUXILIARY MODULES
 -----------------
 
-* catchup on backlog of Getopt::Tabular fixes -- esp. add a 'dir' type
-  (doesn't do anything to filesystem, just makes sure of a trailing slash)
-
-* also, go over the Getopt::Tabular docs in detail for consistent style
-
 * revamp File::Tokenize and add it to the library
 
 
 BUILD PROCESS
 -------------
+
 * figure out how to add a "doc" target to main Makefile
 
 * figure out how doc/Makefile can know the "real" perl (ie. what
@@ -38,6 +34,10 @@ BUILD PROCESS
 
 TESTING
 -------
+
+* the batch tests that wait for .out$$ and .err$$ succeed erroneously
+  because the files are actually created when the job starts
+
 * datadir.t mysteriously fails on SunOS, but only when being run directly;
   when run by Test::Harness (through a pipe) it works fine.  Huh?!?!?!!?
 
