@@ -12,7 +12,7 @@
 #@REQUIRES   : Exporter
 #@CREATED    : 1997/08/07, Greg Ward (from minc_utilities.pl, revision 1.16)
 #@MODIFIED   : 
-#@VERSION    : $Id: MincUtilities.pm,v 1.4 1997-08-28 01:45:31 greg Exp $
+#@VERSION    : $Id: MincUtilities.pm,v 1.5 1997-09-11 21:37:40 greg Rel $
 #@COPYRIGHT  : Copyright (c) 1997 by Gregory P. Ward, McConnell Brain Imaging
 #              Centre, Montreal Neurological Institute, McGill University.
 #
@@ -97,9 +97,9 @@ MNI::MincUtilities - various MINC file hacks using external utilities
 
    ($order, $permutation) = get_dimension_order ($vol);
 
-   $resample_args = compute_resample_args (\@start, \@extent, \@step);
+   @resample_args = compute_resample_args (\@start, \@extent, \@step);
 
-   $reshape_args = compute_reshape_args (\@order, \@oldstart, \@oldstep,
+   @reshape_args = compute_reshape_args (\@order, \@oldstart, \@oldstep,
                                          \@start, \@extent, \@step);
 
 =head1 DESCRIPTION
@@ -950,7 +950,7 @@ sub compute_reshape_args
    @vstart = @vstart[@$order];
    @count = @count[@$order];
 
-   ('-start', @vstart, '-count', @count);
+   ('-start', join (',', @vstart), '-count', join (',', @count));
 }
 
 =back
