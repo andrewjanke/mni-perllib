@@ -199,7 +199,7 @@ sub save {
     # Do nothing if tag has no corresponding file or has not been modified.
     return unless ($filename and $self->{_dirty});
 
-    open( OUT, ">$filename" )
+    CORE::open( OUT, ">$filename" )
       or croak "$filename : $!\n";
 
     my $comments = '';
@@ -234,7 +234,7 @@ sub save {
     }
 
     print OUT ";\n";
-    close( OUT ) 
+    CORE::close( OUT ) 
       or croak "$filename: $!\n";
 
     $self->{_dirty} = 0;
@@ -258,7 +258,7 @@ sub load {
 
     $filename = $self->{filename} unless $filename;
 
-    open( IN, $filename ) 
+    CORE::open( IN, $filename ) 
       or croak "$filename cannot be read ($!)";
 
     <IN> =~ /MNI Tag Point File/ 
@@ -292,7 +292,7 @@ sub load {
 	    $self->{"_label_${label}"} = scalar(@{$self->{_volume1}}) - 1;
 	}
     }
-    close( IN );
+    CORE::close( IN );
 }
 
 sub _read_point {

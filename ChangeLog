@@ -1,3 +1,8 @@
+Sun Jan 16 15:16:02 2000  Steve Robbins  <steve@nyongwa.montreal.qc.ca>
+
+	* MNI/Tag.pm (load, save): qualify `open' and `close' calls with CORE:: to 
+	distinguish them from Tag::open and Tag::close.
+
 Sun Jan 16 14:58:54 2000  Steve Robbins  <steve@nyongwa.montreal.qc.ca>
 
 	* NEWS: new file.  Summary of USER-visible changes between
