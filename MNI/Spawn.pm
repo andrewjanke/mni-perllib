@@ -14,7 +14,7 @@
 #@REQUIRES   : Exporter
 #@CREATED    : 1997/07/07, Greg Ward (loosely based on JobControl.pm, rev 2.8)
 #@MODIFIED   : 
-#@VERSION    : $Id: Spawn.pm,v 1.7 1997-08-13 14:59:29 greg Exp $
+#@VERSION    : $Id: Spawn.pm,v 1.8 1997-08-18 22:34:07 greg Exp $
 #@COPYRIGHT  : Copyright (c) 1997 by Gregory P. Ward, McConnell Brain Imaging
 #              Centre, Montreal Neurological Institute, McGill University.
 #
@@ -62,7 +62,7 @@ my %DefaultOptions =
     add_defaults => 1,                  # should we add default arguments?
     search_path  => undef,              # list of directories to search
 #   merge_stderr => REDIRECT,           # when to automatically merge stderr
-    err_action   => '',                 # what to do when a command fails
+    err_action   => 'fatal',            # what to do when a command fails
     batch        => 0,                  # submit commands to batch system?
     clobber      => 0,                  # overwrite output files (not append)
     loghandle    => \*STDOUT,           # filehandle to write commands to
@@ -164,15 +164,22 @@ sub set_options
 #-----------------------------------------------------------------------------
 sub register_programs
 {
-   my ($self, $programs, $path) = shift;
+   my ($self, $programs, $path) = @_;
 
    croak 'register_programs: $programs must be an array reference'
       unless ref $programs eq 'ARRAY';
    croak 'register_programs: if supplied, $path must be a scalar or list reference'
       unless (ref $path eq 'ARRAY' || ! ref $path);
 
-   my @fullpaths = find_programs 
-      ($programs, $path || $self->{search_path});
+   my (@fullpaths, @warnings);
+
+   @warnings = catch_warnings
+      (sub
+       { 
+          @fullpaths = find_programs 
+             ($programs, $path || $self->{search_path});
+       });
+
    if (@fullpaths)              # all found successfully?
    {
       confess "Wrong number of full paths to go with program list"
@@ -183,6 +190,7 @@ sub register_programs
    }
    else
    {
+      map { warn "$::ProgramName: \l$_" } @warnings;
       return 0;
    }
 }
@@ -279,13 +287,6 @@ sub spawn
    my ($self, $command, @options) = @_;
    my ($program);
 
-   # Inherit `verbose' and `execute' options from variables in main
-   # package if they aren't already defined
-
-   $self->set_undefined_option ('verbose', 'Verbose');
-   $self->set_undefined_option ('execute', 'Execute');
-
-
    # If caller supplied any options, make a copy of the spawning vat
    # and override those options in the copy only
 
@@ -296,12 +297,19 @@ sub spawn
    }
 
 
+   # Inherit `verbose' and `execute' options from variables in main
+   # package if they aren't already defined
+
+   $self->set_undefined_option ('verbose', 'Verbose');
+   $self->set_undefined_option ('execute', 'Execute');
+
+
    # Complete the command (ie. program name to full path, insert
    # options fore and aft)
 
    ($command, $program) = $self->complete_command
       ($command, $self->{verbose} && !$self->{batch});
-
+   return 1 unless defined $command;
 
    # Figure out just what the user wants us to do with stdout and stderr
 
@@ -385,11 +393,15 @@ sub spawn
 # End of externally-used stuff -- now come the methods and subroutines
 # only called internally (i.e. by `spawn' itself or by other interal
 # routines):
+#   find_calling_package (subroutine)
+#   catch_warnings       (subroutine)
 #   set_undefined_option (method)
 #   check_program    (method)
 #   complete_command (method)
 #   output_mode      (subroutine)
 #   exec_command     (subroutine)
+#   capture_stream   (subroutine)
+#   flush_stdout     (subroutine)
 #   gather_error     (subroutine)
 #   obituary         (method)
 #   check_status     (method)
@@ -419,6 +431,31 @@ sub find_calling_package
    $package;
 }
 
+
+# ------------------------------ MNI Header ----------------------------------
+#@NAME       : catch_warnings
+#@INPUT      : 
+#@OUTPUT     : 
+#@RETURNS    : 
+#@DESCRIPTION: Runs a bit of Perl code (a code ref) with warnings captured
+#              to an array.
+#@METHOD     : 
+#@GLOBALS    : 
+#@CALLERS    : 
+#@CALLS      : 
+#@CREATED    : 1997/08/18, GPW
+#@MODIFIED   : 
+#-----------------------------------------------------------------------------
+sub catch_warnings
+{
+   my ($code) = @_;
+   my @warnings = ();
+
+   local $SIG{'__WARN__'} = sub { push (@warnings, $_[0]) };
+   &$code;
+   @warnings;
+}
+   
 
 # ------------------------------ MNI Header ----------------------------------
 #@NAME       : set_undefined_option
@@ -499,22 +536,33 @@ sub check_program
    if ($program !~ m|/|)      # just a name, no directories at all
    {
       $fullpath = $self->{programs}{$program};
-      if (! defined $fullpath && $self->{search})
+      if (! defined $fullpath) 
       {
-         croak ("spawn: warning: program \"$program\" not registered")
+         croak ("spawn: error: program \"$program\" not registered")
             if ($self->{strict} == 2);
          carp ("spawn: warning: program \"$program\" not registered")
             if ($self->{strict} == 1);
 
-         $fullpath = find_program ($program, $self->{search_path});
-         if (! defined $fullpath)
+         if ($self->{search})
          {
-            return $self->check_status (255 << 8, $program, $command);
+            my @warnings;
+            @warnings = catch_warnings 
+               (sub {
+                  $fullpath = find_program ($program, $self->{search_path}) 
+                });
+
+            if (! $fullpath)
+            {
+               map { warn "spawn: warning: \l$_" } @warnings;
+               $self->check_status (255 << 8, $program, $command, 
+                                    UNTOUCHED, UNTOUCHED);
+               return ();
+            }
          }
-      }
-      else                              # program not registered or caller
-      {                                 # disallowed searching -- so mere
-         $fullpath = $program;          # program name will have to do
+         else                           # program not registered, but caller
+         {                              # disallowed searching -- so mere
+            $fullpath = $program;       # program name will have to do
+         }
       }
    }
    else                                 # caller supplied a path (possibly
@@ -523,7 +571,8 @@ sub check_program
       {
          warn "spawn: warning: " . 
               "program \"$program\" doesn't exist or isn't executable\n";
-         return $self->check_status (255 << 8, $program, $command);
+         return $self->check_status (255 << 8, $program, $command,
+                                    UNTOUCHED, UNTOUCHED);
       }
 
       $fullpath = $program;
@@ -612,6 +661,7 @@ sub complete_command
          $program = shift @command;
          my ($fullpath, $pre_defargs, $post_defargs) =
             $self->check_program ($command, $program);
+         return () unless defined $fullpath;
          
          # Build a new command list using the full path and default options;
          # use this to print and execute
@@ -661,16 +711,18 @@ sub complete_command
          # XXX uh... what if $command is "ls>foo" ??? -- this regexp won't
          # do the right thing!
 
-         $command =~ s/^(\S+)\s*//;
+         my $args;
+         ($args = $command) =~ s/^(\S+)\s*//;
          $program = $1;
          my ($fullpath, $pre_defargs, $post_defargs) = 
             $self->check_program ($command, $program);
+         return () unless defined $fullpath;
 
          # Build a new command string using the full path and default options;
          # print the command and execute it
 
          $command = join (" ", $fullpath,
-                          @$pre_defargs, $command || (), @$post_defargs);
+                          @$pre_defargs, $args || (), @$post_defargs);
       }
       else
       {
@@ -781,16 +833,22 @@ sub exec_command
          || croak ("spawn: unable to redirect stderr to \"$stderr_dest\": $!");
    }
 
-   # Exec that sucker!
+   # Exec that sucker; we turn warnings off because Perl generates a
+   # warning on failed exec, which would be redundant (due to 'die' below)
 
-   (ref $command)
-      ? exec @$command
-      : exec $command;
+   {
+      local $^W = 0;
+      (ref $command)
+         ? exec @$command
+         : exec $command;
+   }
 
-   # If we get here, the exec failed -- should not happen because of
-   # the care we take to find the program in &check_program
+   # If we get here, the exec failed -- this should not normally happen
+   # because of the care we take to find the program in &check_program, but
+   # could if the user has disabled searching
 
-   confess "spawn: exec of $program failed: $!";
+   print STDERR "spawn: exec of $program failed: $!\n";
+   exit 255;
 
 }  # exec_command
 
@@ -820,6 +878,34 @@ sub capture_stream
    $$dest = join ("", <$stream>), return if (ref $dest eq 'SCALAR');
    chomp (@$dest = <$stream>),    return if (ref $dest eq 'ARRAY');
    confess "capture_stream: \$dest must be scalar or array ref";
+}
+
+
+# ------------------------------ MNI Header ----------------------------------
+#@NAME       : flush_stdout
+#@INPUT      : 
+#@OUTPUT     : 
+#@RETURNS    : 
+#@DESCRIPTION: Flushes the STDOUT filehandle.
+#@METHOD     : 
+#@GLOBALS    : 
+#@CALLERS    : 
+#@CALLS      : 
+#@CREATED    : 1997/08/18, GPW
+#@MODIFIED   : 
+#-----------------------------------------------------------------------------
+sub flush_stdout
+{
+   if (defined &IO::Handle::flush || defined &FileHandle::flush)
+   {
+      STDOUT->flush;
+   }
+   else
+   {
+      my $fh = select (STDOUT);
+      $| = 1; print '';
+      select ($fh);
+   }
 }
 
 
@@ -915,7 +1001,7 @@ sub obituary
       open (MAIL, "|/usr/lib/sendmail $self->{notify}");
 
       print MAIL <<EOM;
-From: ($::ProgramName)
+From: $::ProgramName ($::ProgramName)
 Subject: $::ProgramName crashed while running $program
 
 Dear $self->{notify},
@@ -999,6 +1085,7 @@ sub check_status
       my $ea = $self->{err_action};
       $ea = 'warn' unless $ea;          # backwards compatibility (empty string
                                         # or undefined same as 'warn')
+      $! = $? >> 8;                     # so exit status will propagate
 
       if ($ea eq 'fatal')
       {
@@ -1066,7 +1153,7 @@ sub check_status
 #              to
 #@GLOBALS    : 
 #@CALLERS    : spawn
-#@CALLS      : exec_command, gather_error, check_status
+#@CALLS      : flush_stdout, exec_command, gather_error, check_status
 #@CREATED    : 1996/12/10, GPW (from &Spawn)
 #@MODIFIED   : 1997/07/08, GPW (from JobControl.pm)
 #-----------------------------------------------------------------------------
@@ -1084,6 +1171,7 @@ sub spawn_capture
    # redirect to "&STDOUT" -- this is done by exec_command), or it's
    # left untouched.
 
+   flush_stdout;
    $pid = open (PIPE, "-|");
    croak "spawn: failed to start child process: $!" unless defined $pid;
 
@@ -1130,7 +1218,7 @@ sub spawn_capture
 #@METHOD     : 
 #@GLOBALS    : 
 #@CALLERS    : spawn
-#@CALLS      : exec_command, gather_error, check_status
+#@CALLS      : flush_stdout, exec_command, gather_error, check_status
 #@CREATED    : 1996/12/10, GPW (from &Spawn)
 #@MODIFIED   : 1997/07/08, GPW (from JobControl.pm)
 #-----------------------------------------------------------------------------
@@ -1140,6 +1228,7 @@ sub spawn_redirect
        $stdout_mode, $stdout, $stderr_mode, $stderr) = @_;
    my ($pid, $status);
 
+   flush_stdout;
    $pid = fork;
    croak "spawn: failed to start child process: $!" unless defined $pid;
 
