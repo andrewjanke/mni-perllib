@@ -6,7 +6,7 @@
 #
 # Greg Ward, summer 1997
 #
-# $Id: Makefile.PL,v 1.4 1997-09-24 18:38:23 greg Exp $
+# $Id: Makefile.PL,v 1.5 1997-10-01 20:58:04 greg Rel $
 #
 
 use strict;
@@ -14,8 +14,6 @@ use ExtUtils::MakeMaker;
 
 my %subs = 
    (DEFAULT_DATA_DIR      => '/usr/local/mni/data');
-my @sub_files = ('MNI/DataDir.pm.in',
-                 't/datadir.t.in');
 
 # $ExtUtils::MakeMaker::Verbose = 1;
 
@@ -177,7 +175,7 @@ sub MY::test
    my $text;
 
    $text = $self->MM::test;
-   $text =~ s|^(test \s* ::) \s*|$1 t/datadir.t |mx
+   $text =~ s|^(test \s* ::) \s*|$1 t/datadir.t t/toy_ls |mx
       or warn "warning: couldn't fiddle `test' section " .
               "to add t/datadir.t dependency";
    $text;
@@ -201,6 +199,11 @@ t/datadir.t : t/datadir.t.in Makefile
 	sed 's|@DEFAULT_DATA_DIR@|$(DEFAULT_DATA_DIR)|' t/datadir.t.in > $@
 	chmod 444 $@
 
+t/toy_ls : t/toy_ls.in Makefile
+	rm -f $@
+	sed 's|@PERL@|\#!$(FULLPERL)|' t/toy_ls.in > $@
+	chmod 555 $@
+
 TEXT
 
    print "MY::postamble: now text = \n" . $text . "\n"
@@ -219,5 +222,5 @@ WriteMakefile
     VERSION_FROM  => 'MNI.pm',
     PMLIBDIRS     => ['Getopt', 'MNI'],
     dist          => { COMPRESS=>"gzip", SUFFIX=>"gz" },
-    clean         => { FILES => 'MNI/DataDir.pm t/datadir.t' },
+    clean         => { FILES => 'MNI/DataDir.pm t/datadir.t t/toy_ls' },
    );
