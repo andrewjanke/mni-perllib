@@ -1,3 +1,7 @@
+Sun Jan 16 15:37:54 2000  Steve Robbins  <steve@nyongwa.montreal.qc.ca>
+
+	* MNI.pm: bump VERSION to 0.06.
+
 Sun Jan 16 15:16:02 2000  Steve Robbins  <steve@nyongwa.montreal.qc.ca>
 
 	* MNI/Tag.pm (load, save): qualify `open' and `close' calls with CORE:: to 
