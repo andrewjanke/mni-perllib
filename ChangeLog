@@ -1,3 +1,9 @@
+2000-09-22  Steve ROBBINS  <stever@bic.mni.mcgill.ca>
+
+	* MNI/TagSet.pm (new): option name is `comment' not `comments'.
+	(get_point): bugfix; used `grep' where should have used `map'.
+	Localize all usages of `$_'.
+
 2000-09-19  Steve ROBBINS  <stever@bic.mni.mcgill.ca>
 
 	* MNI/TagSet.pm:

@@ -98,7 +98,7 @@ sub copy {
 =item MNI::TagSet::new( option => value ... )
 
 Construct a new tag file.  Possible options: filename, num_volumes,
-comments.
+comment.
 
 =cut
 
@@ -119,9 +119,9 @@ sub new {
     $self->{num_volumes} = 1
       unless defined($self->{num_volumes});
 
-    if (defined($self->{comments})) {
-	$self->{comments} = [ $self->{comments} ]
-	  unless ref $self->{comments};
+    if (defined($self->{comment})) {
+	$self->{comment} = [ $self->{comment} ]
+	  unless ref $self->{comment};
     }
 
     return bless( $self, $class );
@@ -186,7 +186,8 @@ sub get_point {
     if ( $label =~ /^\d+$/ ) {
 	return $self->{set}->[$label];
     } else {
-	my @ret = map {$_->label eq $label} @{$self->{set}};
+	local $_;
+	my @ret = grep {$_->label eq $label} @{$self->{set}};
 	carp "tag label `$label' not defined"
 	  if @ret == 0;
 	carp "tag label `$label' multiply defined"
@@ -270,6 +271,7 @@ sub volume1 {
     my( $label, $new_value ) = @_;
 
     if ( !defined($label) ) {
+	local $_;
 	return map {$_->volume1} @{$self->{set}};
     }
 
@@ -296,6 +298,7 @@ sub volume2 {
     my( $label, $new_value ) = @_;
 
     if ( !defined($label) ) {
+	local $_;
 	return map {$_->volume2} @{$self->{set}};
     }
 
@@ -335,6 +338,7 @@ Return array of all labels in Tag file.
 
 sub all_labels {
     my $self = shift;
+    local $_;
     return map { $_->label || () } @{$self->{set}};
 }
 				 
