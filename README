@@ -255,5 +255,40 @@ on its own (and in fact has been independently released):
 One or two more general-purpose modules will join Getopt::Tabular in
 future releases.
 
-Any problems with the library should be reported to
-greg@bic.mni.mcgill.ca.
+
+DOCUMENTATION
+-------------
+
+Each module is thoroughly documented using the 'pod' embedded
+documentation convention for Perl modules.  This means that after
+installation, you should be able to get the full documentation on, say,
+MNI::Spawn by just typing "man MNI::Spawn".  (This might not work if
+Perl wasn't configured to install module man pages to the system man
+page directory.  In this case, you'll have to specify a custom search
+path to 'man', or use the 'perldoc' command to find and display the
+documentation: "perldoc MNI::Spawn").
+
+You can also create a complete printable manual from all the man pages,
+as long as you have LaTeX2e and dvips installed.  Just do the following
+from the top-level distribution directory:
+
+   cd doc
+   make
+
+This will create a PostScript file, mni_perllib.ps, printable on any
+PostScript printer.  If you don't have LaTeX and/or dvips but would
+still like a copy of the manual, send me email and I'll make PostScript
+copies available.
+
+
+Any problems with the library should be reported to me.  Also, if the
+library builds and passes all tests with no problems on your system, I
+wouldn't mind hearing about it -- a short note will suffice, but please
+tell me what system, OS, and OS version you have.
+
+-------------------------------------------------------------------------
+Greg Ward - Research Assistant                     greg@bic.mni.mcgill.ca
+Brain Imaging Centre (WB201)           http://www.bic.mni.mcgill.ca/~greg
+Montreal Neurological Institute           voice: (514) 398-4965 (or 1996)
+Montreal, Quebec, Canada  H3A 2B4           fax: (514) 398-8948
+-------------------------------------------------------------------------
