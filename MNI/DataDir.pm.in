@@ -9,7 +9,7 @@
 #              static data (eg. model files).
 #@CREATED    : 
 #@MODIFIED   : 
-#@VERSION    : $Id: DataDir.pm.in,v 1.5 1997-09-29 21:17:14 greg Exp $
+#@VERSION    : $Id: DataDir.pm.in,v 1.6 1997-09-30 21:12:27 greg Rel $
 #@COPYRIGHT  : Copyright (c) 1997 by Gregory P. Ward, McConnell Brain Imaging
 #              Centre, Montreal Neurological Institute, McGill University.
 #
@@ -103,7 +103,7 @@ my $default_dir = '@DEFAULT_DATA_DIR@';
 my @search_path = exists $ENV{'MNI_DATAPATH'}
    ? split (':', $ENV{'MNI_DATAPATH'})
    : ($default_dir);
-my $program_name = $MNI::Startup::ProgramName || $::ProgramName || $0;
+my $program_name = defined $::ProgramName ? $::ProgramName : $0;
 
 
 =head1 SUBROUTINES
