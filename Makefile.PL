@@ -6,7 +6,7 @@
 #
 # Greg Ward, summer 1997
 #
-# $Id: Makefile.PL,v 1.3 1997-09-18 19:01:06 greg Rel $
+# $Id: Makefile.PL,v 1.4 1997-09-24 18:38:23 greg Exp $
 #
 
 use strict;
@@ -113,6 +113,19 @@ sub MY::post_initialize
    '';                                  # don't actually want to put anything
                                         # in the makefile!
 }  # &MY::post_initialize
+
+
+sub MY::dist
+{
+   my $self = shift;
+
+   my $text = $self->MM::dist;
+   $text =~ s/ci -u/ci -u -d/m 
+      or warn "dist: couldn't tweak 'ci -u'";
+   $text =~ s/-Nv/-sRel -N\$(NAME_SYM)_v/m 
+      or warn "dist: couldn't tweak 'rcs -N'";
+   $text;
+}
 
 
 sub MY::macro
