@@ -13,7 +13,7 @@
 #@REQUIRES   : Exporter
 #@CREATED    : 1997/07/07, Greg Ward (loosely based on JobControl.pm, rev 2.8)
 #@MODIFIED   : 
-#@VERSION    : $Id: Spawn.pm,v 1.5 1997-07-25 03:54:47 greg Exp $
+#@VERSION    : $Id: Spawn.pm,v 1.6 1997-08-08 14:56:04 greg Exp $
 #@COPYRIGHT  : Copyright (c) 1997 by Gregory P. Ward, McConnell Brain Imaging
 #              Centre, Montreal Neurological Institute, McGill University.
 #
@@ -281,8 +281,8 @@ sub spawn
    # Inherit `verbose' and `execute' options from variables in main
    # package if they aren't already defined
 
-   $self->set_undefined_option ('verbose', $main::Verbose);
-   $self->set_undefined_option ('execute', $main::Execute);
+   $self->set_undefined_option ('verbose', 'Verbose');
+   $self->set_undefined_option ('execute', 'Execute');
 
 
    # If caller supplied any options, make a copy of the spawning vat
@@ -396,6 +396,29 @@ sub spawn
 #   spawn_redirect   (method)
 # ----------------------------------------------------------------------
 
+
+# ------------------------------ MNI Header ----------------------------------
+#@NAME       : find_calling_package
+#@INPUT      : 
+#@OUTPUT     : 
+#@RETURNS    : 
+#@DESCRIPTION: 
+#@CALLERS    : 
+#@CALLS      : 
+#@CREATED    : 1997/08/08, GPW (from code in &check_status)
+#@MODIFIED   : 
+#-----------------------------------------------------------------------------
+sub find_calling_package
+{
+   my ($i, $this_pkg, $package, $filename, $line);
+
+   $i = 0;
+   $i++ while (($package = caller $i) eq 'MNI::Spawn');
+#   print "caller $i is $package\n";
+   $package;
+}
+
+
 # ------------------------------ MNI Header ----------------------------------
 #@NAME       : set_undefined_option
 #@INPUT      : 
@@ -407,10 +430,17 @@ sub spawn
 #-----------------------------------------------------------------------------
 sub set_undefined_option
 {
-   my ($self, $option, $value) = @_;
+   no strict 'refs';
+   my ($self, $option, $varname) = @_;
 
-   $self->{$option} = $value 
-      unless defined $self->{$option};
+   return if defined $self->{$option};
+
+   my $package = find_calling_package;
+   carp "spawn: fallback variable $package\::$varname undefined " .
+        "for option $option"
+#      unless exists ${$package . '::'}{$varname};
+      unless defined ${ $package . '::' . $varname };
+   $self->{$option} = ${ $package . '::' . $varname }
 }
 
 
@@ -997,8 +1027,6 @@ sub check_status
       }
       elsif ($ea)                       # some chunk of code to be eval'd
       {
-	 my ($i, $this_pkg, $up_pkg, @caller);
-
          carp "spawn: you should be using `notify' rather than " .
                "hard-coding a call to \&Obituary in `err_action'" 
             if $ea =~ /obituary/i;
@@ -1006,13 +1034,7 @@ sub check_status
               "hard-coding a `die' in `err_action'" 
             if $ea =~ /die/;
 
-	 $i = 0;                        # find calling package
-	 $this_pkg = (caller(0))[0];
-	 while (@caller = caller($i++))
-	 {
-	    $up_pkg = $caller[0];
-	    last if $up_pkg ne $this_pkg;
-	 }
+         my $up_pkg = find_calling_package;
 
 	 eval "package $up_pkg; $ea";
 	 croak "spawn: error in err_action code: $@" if $@;
