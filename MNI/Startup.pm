@@ -8,7 +8,7 @@
 #@REQUIRES   : Exporter
 #@CREATED    : 1997/07/25, Greg Ward (from old Startup.pm, rev. 1.23)
 #@MODIFIED   : 
-#@VERSION    : $Id: Startup.pm,v 1.8 1997-09-25 20:13:05 greg Exp $
+#@VERSION    : $Id: Startup.pm,v 1.9 1997-09-30 18:10:30 greg Exp $
 #@COPYRIGHT  : Copyright (c) 1997 by Gregory P. Ward, McConnell Brain Imaging
 #              Centre, Montreal Neurological Institute, McGill University.
 #
@@ -389,8 +389,11 @@ a serious problem with your script or the Perl interpreter running it
 (ILL, TRAP, ABRT, IOT, BUS, EMT, FPE, SEGV, and SYS); and user-defined
 signals (USR1 and USR2).  Note that not all of these signals are valid
 on a given platform, so F<MNI::Startup> only installs handlers for the
-subset of these signals that Perl knows about.  Currently, no
-distinction is made between the groups of signals.
+subset of these signals that Perl knows about.  (With versions of Perl
+previous to 5.004, this information is not available, so F<MNI::Startup>
+in that case installs handlers for the five "expected" signals only.)
+Currently, no distinction is made between "expected" and "unexpected"
+signals.
 
 The F<sigtrap> module provided with Perl 5.004 provides a more flexible
 approach to signal handling, but doesn't provide a signal handler to
@@ -482,8 +485,13 @@ sub startup
 
    if ($options{sig})
    {
-      my $sig;
-      foreach $sig (grep (exists $SIG{$_}, keys %signals))
+      my ($sig, @known_signals);
+      @known_signals = 
+         $] >= 5.004 
+            ? grep (exists $SIG{$_}, keys %signals)
+            : qw(HUP INT QUIT PIPE TERM);
+
+      foreach $sig (@known_signals)
       {
          $SIG{$sig} = \&catch_signal;
       }
