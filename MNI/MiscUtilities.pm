@@ -14,7 +14,7 @@
 #@REQUIRES   : Exporter
 #@CREATED    : 1997/04/24, Greg Ward (from misc_utilities.pl)
 #@MODIFIED   : 
-#@VERSION    : $Id: MiscUtilities.pm,v 1.1 1997-04-25 19:10:13 greg Exp $
+#@VERSION    : $Id: MiscUtilities.pm,v 1.2 1997-06-05 16:01:32 greg Exp $
 #@COPYRIGHT  : Copyright (c) 1997 by Gregory P. Ward, McConnell Brain Imaging
 #              Centre, Montreal Neurological Institute, McGill University.
 #
@@ -26,22 +26,69 @@
 package MNI::MiscUtilities;
 
 use strict;
-use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS);
+use vars qw(@ISA @EXPORT_OK %EXPORT_TAGS);
 
 require 5.002;
 require Exporter;
+require AutoLoader;
 
 use POSIX qw(strftime);
 use Sys::Hostname;
 use Cwd;
 
-@ISA = qw(Exporter);
-@EXPORT = qw(timestamp userstamp lcompare nlist_equal make_banner shellquote);
+@ISA = qw(Exporter AutoLoader);
+@EXPORT_OK = qw(timestamp
+                userstamp
+                lcompare
+                nlist_equal
+                make_banner
+                shellquote);
+%EXPORT_TAGS = (all => \@EXPORT_OK);
+
+__END__
+
+=head1 NAME
+
+MNI::MiscUtilities - miscellaneous and unclassifiable utility routines
+
+=head1 SYNOPSIS
+
+   $when = timestamp ([TIME])
+
+   $whowhere = userstamp ([USER [, HOST [, DIR]]])
+
+   $cmp = lcompare (COMPARE_FN, LIST1, LIST2)
+
+   $cmp = nlist_equal (LIST1, LIST2)
+
+   $banner = make_banner (MSG [, CHAR [, WIDTH]])
+
+   $cmd_string = shellquote (WORDLIST)
+
+=head1 DESCRIPTION
+
+C<MNI::MiscUtilities> provides a handful of otherwise unclassifiable
+utility routines.  Don't go looking for a common thread of purpose or
+operation--there isn't one!
+
+=over 4
+
+=item timestamp ([TIME])
+
+Formats TIME in a complete, unambiguous, ready-to-sort fashion:
+C<yyyy-mm-dd hh:mm:ss>.  TIME defaults to the current time; if it is
+supplied, it should be a time in the standard C/Unix representation:
+seconds since 1970-01-01 00:00:00 UTC, as returned by Perl's built-in
+C<time> function.
+
+Returns a string containing the formatted time.
+
+=cut
 
 #
 # IDEA: should timestamp and userstamp be moved to a new module, say
 # MNI::Footprint (should only be needed by Spawn, Backgroundify, and 
-# MINC history stuff)
+# MINC history stuff)?
 #
 
 # ------------------------------ MNI Header ----------------------------------
@@ -69,6 +116,24 @@ sub timestamp (;$)
    strftime ('%Y-%m-%d %H:%M:%S', localtime ($tm));
 }
 
+
+=item userstamp ([USER [, HOST [, DIR]]])
+
+Forms a useful complement to C<timestamp>; where C<timestamp> tells the
+"when" of an action, C<userstamp> gives the "who" and "where".  That is,
+C<userstamp> generates and returns a string containing the current
+username, host, and working directory, e.g. C<user@host:/directory>.
+
+Normally, no parameters are given to C<userstamp> -- it uses C<$E<lt>> (the
+real uid) and C<getpwuid> to get the username, C<Sys::Hostname::hostname>
+to get the hostname, and C<Cwd::getcwd> to get the current directory.  If
+you wish to generate a bogus "userstamp", though, you may do so by
+overriding some or all of C<userstamp>'s arguments.  For instance, to
+supply a fake directory, but use the defaults for USER and HOST:
+
+   userstamp (undef, undef, '/fake/dir');
+
+=cut
 
 # ------------------------------ MNI Header ----------------------------------
 #@NAME       : userstamp
@@ -99,7 +164,41 @@ sub userstamp (;$$$)
 }
 
 
+=item lcompare (COMPARE_FN, LIST1, LIST2)
 
+Compares two lists, element-by-element, and returns -1, 0, or 1, depending
+on whether LIST1 is less than, equal to, or greater than LIST2.  COMPARE_FN
+must be a reference to a subroutine that compares individual elements and
+returns -1, 0, or 1 appropriately.  The elements to compare are passed in
+as C<@_>, so the body of this subroutine will usually look like C<$_[0] cmp
+$_[1]> or C<$_[0] E<gt>=E<lt> $_[1]>, depending on whether you're dealing
+with lists of strings or of numbers.  LIST1 and LIST2 must both be list
+references.
+
+The semantics of list comparison are identical to those for string
+comparison.  In particular, two lists are equal if and only if they have
+the same length, and all corresponding pairs of elements are identical.  If
+two lists are of the same length but have different elements at position
+I<i>, then the list with the greater element at position I<i> is greater,
+regarldess of what comes after position I<i>.  If LIST1 and LIST2 are
+identical up to the last element of LIST2, and LIST1 is longer, then LIST1
+is greater.  If they are identical up to the last element of LIST1, and
+LIST2 is longer, then LIST2 is greater.
+
+For example, the lists in the left-hand column are greater than the
+lists in the right-hand column:
+
+      (3,4,5)                (3,4,4)
+      (3,4,4)                (3,4)
+      (3,4,5)                (3,4)
+
+Incidentally, the semantic equivalence of list and string comparison
+means that, for strings C<$s1> and C<$s2>, the following is always true:
+
+   lcompare (sub { $_[0] cmp $_[1] }, [split ('', $s1)], [split ('', $s2)])
+     == $s1 cmp $s2
+
+=cut
 
 # Had an interesting time trying to make my `lcompare' act like
 # builtin `sort', eg. so you could do any of these:
@@ -155,7 +254,7 @@ sub lcompare # (&\@\@)
    for $i (0 .. $#$alist)
    {
       my ($a, $b) = ($alist->[$i], $blist->[$i]);
-      return 1 if !defined $b;         # a longer
+      return 1 if !defined $b;          # list a is longer
       $result = &$cmp ($a, $b);
       return $result if $result != 0;
    }
@@ -164,6 +263,15 @@ sub lcompare # (&\@\@)
    return 0;                            # they're equal
 }
 
+
+=item nlist_equal (LIST1, LIST2)
+
+Uses C<lcompare> to compare two lists of numbers, and returns true if they
+are equal.  LIST1 and LIST2 must be list references.  Note that the boolean
+sense of C<nlist_equal> is reversed from that of C<lcompare>,
+i.e. C<nlist_equal> returns true if C<lcompare> returns 0.
+
+=cut
 
 # ------------------------------ MNI Header ----------------------------------
 #@NAME       : nlist_equal
@@ -182,6 +290,15 @@ sub nlist_equal
    (lcompare (sub { $_[0] <=> $_[1] }, $alist, $blist)) == 0;
 }
 
+
+=item make_banner (MSG [, CHAR [, WIDTH]])
+
+Creates and returns a string of the form C<-- Hello! ---------->
+(assuming MSG is C<'hello!'>, CHAR is C<'-'>, and WIDTH is 20.  CHAR
+defaults to C<'-'>, and WIDTH defaults to 80 (although I may eventually
+change this to the width of the terminal).
+
+=cut
 
 # ------------------------------ MNI Header ----------------------------------
 #@NAME       : make_banner
@@ -213,6 +330,38 @@ sub make_banner
 }
 
 
+=item shellquote (WORDLIST)
+
+Performs the opposite of the C<Text::ParseWords> module, namely it joins
+an array of words together, with some sub-strings quoted in order to
+escape shell meta-characters.  WORDLIST should just be a list of
+substrings, not a list reference.  This is useful for turning a list of
+arguments (such as C<@ARGV>, or something you're about to pass to Perl's
+C<system>) into a string that looks like what you might type to the
+shell.
+
+The exact rules are as follows: if a word contains no metacharacters and
+is not empty, it is untouched.  If it contains both single and double
+quotes (C<'> and C<">), all meta- characters are escaped with a
+backslash, and no quotes are added.  If it contains just single quotes,
+it is encased in double quotes.  Otherwise -- that is, if it is empty or
+contains meta-characters other than C<'> -- it is encased in single
+quotes.
+
+The list of shell meta-characters is taken from the Perl source code
+(C<do_exec()>, in doio.c), and thus is specific to the Bourne shell:
+
+   $ & * ( ) { } [ ] ' " ; \ | ? < > ~ ` \n
+
+(plus whitespace).
+
+For example, if C<@ARGV> is C<("foo", "*.bla")>, then
+C<shellquote (@ARGV)> will return C<"foo '*.bla'"> -- thus turning a
+simple list of arguments into a string that coule be given to the shell
+to re-generate that list of arguments.
+
+=cut
+
 # ------------------------------ MNI Header ----------------------------------
 #@NAME       : &shellquote
 #@INPUT      : @words - list of words to possibly quote or escape
@@ -224,11 +373,12 @@ sub make_banner
 #              to allow later processing by the shell.  (/bin/sh, in 
 #              particular -- the list of metacharacters was taken from
 #              the Perl source that does an exec().)
-#@METHOD     : If a word contains no metacharacters, it is untouched.  
-#              If it contains both single and double quotes, all meta-
-#              characters are escaped with a backslash, and no quotes 
-#              are added.  If it contains just single quotes, it is encased
-#              in double quotes.  Otherwise, it is encased in single quotes.
+#@METHOD     : If a word contains no metacharacters and is not empty, it is
+#              untouched.  If it contains both single and double quotes,
+#              all meta- characters are escaped with a backslash, and no
+#              quotes are added.  If it contains just single quotes, it is
+#              encased in double quotes.  Otherwise, it is encased in
+#              single quotes.
 #@GLOBALS    : 
 #@CALLS      : 
 #@CREATED    : 1996/11/13, Greg Ward
@@ -270,5 +420,19 @@ sub shellquote
    join (" ", @words);
 }
 
+
+=head1 AUTHOR
+
+Greg Ward, <greg@bic.mni.mcgill.ca>.
+
+=head1 COPYRIGHT
+
+Copyright (c) 1997 by Gregory P. Ward, McConnell Brain Imaging Centre,
+Montreal Neurological Institute, McGill University.
+
+This file is part of the MNI Perl Library.  It is free software, and may be
+distributed under the same terms as Perl itself.
+
+=cut
 
 1;
