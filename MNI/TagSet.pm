@@ -485,14 +485,14 @@ sub load {
 	    push(@args, 'volume2' => $val);
 	}
 	
-	# MNI tag files can have either of: 0, 1, or 4 additional 
-	# strings of info, white-space separated; the last string 
-	# (if any) is always the label.
+	# MNI tag files can have either of: 0, 1, 3, or 4 additional 
+	# strings of info, white-space separated.
 	#
 	# these (optional) additional strings are: weight (float), 
 	# structure_id (integer), patient_id (int), label (string --
 	# can be optionally double-quoted to allow white-space in it).
-	
+	# -- see code below for details...
+
 	# this silly thing called Text::ParseWords::quotewords doesn't
 	# properly handle leading and trailing delimiters (white-space): 
 	# if there is any, the first and last elements of @words will 
@@ -505,6 +505,13 @@ sub load {
 	    # TODO: check if we have indeed a (float, int, int, string)
 	    my %tmphash;
 	    @tmphash{ (qw/ weight structure_id patient_id label /) }= @words;
+	    push(@args, %tmphash);
+	}
+	if( 3 == @words ) {
+	    # TODO: check if we have indeed a (float, int, int)
+	    my %tmphash;
+	    @tmphash{ (qw/ weight structure_id patient_id label /) }= 
+		( @words, undef);
 	    push(@args, %tmphash);
 	}
 	elsif( 1 == @words ) {
