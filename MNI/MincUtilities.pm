@@ -12,7 +12,7 @@
 #@REQUIRES   : Exporter
 #@CREATED    : 1997/08/07, Greg Ward (from minc_utilities.pl, revision 1.16)
 #@MODIFIED   : 
-#@VERSION    : $Id: MincUtilities.pm,v 1.5 1997-09-11 21:37:40 greg Rel $
+#@VERSION    : $Id: MincUtilities.pm,v 1.6 1997-10-02 19:24:19 greg Exp $
 #@COPYRIGHT  : Copyright (c) 1997 by Gregory P. Ward, McConnell Brain Imaging
 #              Centre, Montreal Neurological Institute, McGill University.
 #
@@ -721,7 +721,7 @@ in perm[] gives 1, and indeed zspace is at slot 1 in the list of
 dimensions (counting from zero, of course).
 
 The main reason that these two are so confusing is that they're usually
-the same -- the reason I've used the coronal ordering as an example here
+the same---the reason I've used the coronal ordering as an example here
 is that it's the only standard ordering where the order and permutation
 vectors are different!  (Of the 6 possible orders for three dimensions,
 only coronal I<(y,z,x)> and the non-standard order I<(z,x,y)> have

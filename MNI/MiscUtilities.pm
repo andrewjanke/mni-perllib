@@ -14,7 +14,7 @@
 #@REQUIRES   : Exporter
 #@CREATED    : 1997/04/24, Greg Ward (from misc_utilities.pl)
 #@MODIFIED   : 
-#@VERSION    : $Id: MiscUtilities.pm,v 1.4 1997-08-28 01:28:25 greg Rel $
+#@VERSION    : $Id: MiscUtilities.pm,v 1.5 1997-10-02 19:23:57 greg Exp $
 #@COPYRIGHT  : Copyright (c) 1997 by Gregory P. Ward, McConnell Brain Imaging
 #              Centre, Montreal Neurological Institute, McGill University.
 #
@@ -126,7 +126,7 @@ Forms a useful complement to C<timestamp>; where C<timestamp> tells the
 C<userstamp> generates and returns a string containing the current
 username, host, and working directory, e.g. C<user@host:/directory>.
 
-Normally, no parameters are given to C<userstamp> -- it uses C<$E<lt>> (the
+Normally, no parameters are given to C<userstamp>---it uses C<$E<lt>> (the
 real uid) and C<getpwuid> to get the username, C<Sys::Hostname::hostname>
 to get the hostname, and C<Cwd::getcwd> to get the current directory.  If
 you wish to generate a bogus "userstamp", though, you may do so by
@@ -346,8 +346,8 @@ The exact rules are as follows: if a word contains no metacharacters and
 is not empty, it is untouched.  If it contains both single and double
 quotes (C<'> and C<">), all meta-characters are escaped with a
 backslash, and no quotes are added.  If it contains just single quotes,
-it is encased in double quotes.  Otherwise -- that is, if it is empty or
-contains meta-characters other than C<'> -- it is encased in single
+it is encased in double quotes.  Otherwise---that is, if it is empty or
+contains meta-characters other than C<'>---it is encased in single
 quotes.
 
 The list of shell meta-characters is taken from the Perl source code
@@ -358,7 +358,7 @@ The list of shell meta-characters is taken from the Perl source code
 (plus whitespace).
 
 For example, if C<@ARGV> is C<("foo", "*.bla")>, then
-C<shellquote (@ARGV)> will return C<"foo '*.bla'"> -- thus turning a
+C<shellquote (@ARGV)> will return C<"foo '*.bla'">---thus turning a
 simple list of arguments into a string that could be given to the shell
 to re-generate that list of arguments.
 

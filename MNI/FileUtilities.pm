@@ -17,7 +17,7 @@
 #@REQUIRES   : Exporter
 #@CREATED    : 1997/04/25, Greg Ward (from file_utilities.pl, revision 1.16)
 #@MODIFIED   : 
-#@VERSION    : $Id: FileUtilities.pm,v 1.9 1997-09-30 18:45:47 greg Exp $
+#@VERSION    : $Id: FileUtilities.pm,v 1.10 1997-10-02 19:22:02 greg Exp $
 #@COPYRIGHT  : Copyright (c) 1997 by Gregory P. Ward, McConnell Brain Imaging
 #              Centre, Montreal Neurological Institute, McGill University.
 #
@@ -193,7 +193,7 @@ architecture other than Linux/x86 or IRIX.)
 
 That said, the documentation below should mention the error handling
 behaviour for every individual subroutine.  If any such information is
-missing, that's a documentation bug -- please tell me!  Also, the
+missing, that's a documentation bug---please tell me!  Also, the
 calling summaries in the synopsis above implicitly tell you the
 preferred way for dealing with errors from each subroutine.
 
@@ -291,7 +291,7 @@ C<check_output_dirs>.  In particular, it will create as many levels of
 directories as are needed to ensure that PATH can be written to.)
 
 If PATH ends with a slash, then it is assume to be a directory with no
-filename component, and the same applies -- C<check_output_path>
+filename component, and the same applies---C<check_output_path>
 attempts to create as many levels of directory as are needed to bring
 PATH into existence as a writeable directory.
 
@@ -333,12 +333,12 @@ C<check_output_dirs>.  For example:
 
 Note that if you passed C<$dir> without a trailing slash to
 C<check_output_path> it would merely ensure that conditions are optimal
-for creating F</tmp/mydir> -- probably not what you want.  
+for creating F</tmp/mydir>---probably not what you want.  
 
 The main drawback to C<check_output_dirs> is that it will only create
 one level of directory; C<check_output_path>'s main flaw is that you can
 only check one path at a time.  Furthermore, its logic is quite a bit
-more complicated and prone to subtle bugs -- but I think I've got that
+more complicated and prone to subtle bugs---but I think I've got that
 one licked.
 
 =cut
@@ -669,7 +669,7 @@ sub check_files
 C<test_file> performs a file test (or tests) on FILE, as well as on
 variations of FILE if necessary.  VARIANTS is a list of extensions which
 are used to generate the variant filenames; it defaults to
-C<['gz','z','Z']> -- this is convenient for testing a filename that
+C<['gz','z','Z']>---this is convenient for testing a filename that
 might exist in either original form or compressed form.  You could pass
 in a different list of variant extensions to look for other variations
 on a file, e.g. C<['pgp']> to look for an encrypted variant.
@@ -901,7 +901,7 @@ of informing the user)
 
 =item *
 
-you can't specify the file test -- it's hard-coded to C<"-f && -x">.
+you can't specify the file test---it's hard-coded to C<"-f && -x">.
 
 =item *
 
@@ -1052,7 +1052,7 @@ possible error is that C<"foo.log"> and C<"foo_1.log"> both exist; this
 should never happen if you only use C<generate_numbered_filename> to
 generate filenames for this sequence, so it's considered sufficiently
 serious to C<die> on.  The other possibile error is that C<rename>
-failed, which would also cause a corrupt sequence of filenames -- hence
+failed, which would also cause a corrupt sequence of filenames---hence
 it's deemed fatal as well.
 
 =cut

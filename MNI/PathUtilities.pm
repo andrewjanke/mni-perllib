@@ -18,7 +18,7 @@
 #              AutoLoader
 #@CREATED    : 1997/05/13, Greg Ward (from path_utilities.pl, revision 1.10)
 #@MODIFIED   : 
-#@VERSION    : $Id: PathUtilities.pm,v 1.8 1997-09-10 16:00:09 greg Rel $
+#@VERSION    : $Id: PathUtilities.pm,v 1.9 1997-10-02 19:23:01 greg Exp $
 #@COPYRIGHT  : Copyright (c) 1997 by Gregory P. Ward, McConnell Brain Imaging
 #              Centre, Montreal Neurological Institute, McGill University.
 #
@@ -89,7 +89,7 @@ Throughout this module, directories are usually treated as something to
 be directly concatenated onto a bare filename, i.e. they either end with
 a slash or are empty.  (The exception is C<merge_paths>, which returns a
 list of directories ready to be C<join>'d and stuffed into something
-like C<$ENV{'PATH'}> -- for this, you want '.' for the current
+like C<$ENV{'PATH'}>---for this, you want '.' for the current
 directory, and no trailing slashes.)  You generally don't have to worry
 about doing this for the benefit of the C<MNI::PathUtilities>
 subroutines; they use C<normalize_dirs> to take care of it for you.
@@ -121,7 +121,7 @@ or you can import everything using the C<all> export tag:
 
 =item normalize_dirs (DIR, ...)
 
-Each DIR (a simple list of strings -- no references here) is modified
+Each DIR (a simple list of strings---no references here) is modified
 in-place so that it can be concatenated directly to a filename to form a
 complete path.  This just means that we append a slash to each string,
 unless it already has a trailing slash or is empty.
@@ -221,7 +221,7 @@ means you can reconstruct the original path by just concatenating the
 three return values.)
 
 Finally, C<$base> is just the portion of C<$path> left after pulling off
-C<$dir> and C<$ext> -- i.e., from the last slash to the first period (if
+C<$dir> and C<$ext>---i.e., from the last slash to the first period (if
 C<EXT_OPT> is C<'first'>), or from the last slash to the last period
 excluding skipped extensions (if C<EXT_OPT> is C<'last'>).
 
