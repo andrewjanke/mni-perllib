@@ -1,4 +1,6 @@
 MANIFEST
+README
+CHANGES
 Makefile.PL
 MNI.pm
 mni_perllib.pod
