@@ -737,9 +737,15 @@ the Perl documentation, the modes used for the two open statements
 (one to open the actual file, one to duplicate the filehandle) should be
 the same.  Since C<Spawn> doesn't know how you originally opened your
 file, you should supply the open mode (C<'E<gt>'> or C<'E<gt>E<gt>'>).
+Finally, to make things a little more predictable, it's a good idea to
+put your filehandle into autoflush mode.
+
 For example:
 
+   use FileHandle;
+     ...
    open (LOG, ">log") || die "couldn't create log: $!\n";
+   LOG->autoflush;
    Spawn ($cmd, stdout => ">&main::LOG");
 
 =head2 Capture to a variable
