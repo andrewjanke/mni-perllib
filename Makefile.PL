@@ -6,7 +6,7 @@
 #
 # Greg Ward, summer 1997
 #
-# $Id: Makefile.PL,v 1.2 1997-09-17 22:45:54 greg Exp $
+# $Id: Makefile.PL,v 1.3 1997-09-18 19:01:06 greg Rel $
 #
 
 use strict;
@@ -206,5 +206,5 @@ WriteMakefile
     VERSION_FROM  => 'MNI.pm',
     PMLIBDIRS     => ['Getopt', 'MNI'],
     dist          => { COMPRESS=>"gzip", SUFFIX=>"gz" },
-    clean         => { FILES => 'MNI/DataDir.pm' },
+    clean         => { FILES => 'MNI/DataDir.pm t/datadir.t' },
    );
