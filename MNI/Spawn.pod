@@ -12,6 +12,7 @@ MNI::Spawn - run sub-programs with many bells and whistles
 
    RegisterPrograms ([$prog1, $prog2, ...]) || exit 1;
    RegisterPrograms ([$prog1, $prog2, ...], $path) || exit 1;
+   RegisterPrograms ({$name => $executable, ... }) || exit 1;
 
    AddDefaultArgs ($prog, \@args);
    AddDefaultArgs ($prog, \@args, 'pre');       # 'pre' is default
@@ -34,6 +35,7 @@ MNI::Spawn - run sub-programs with many bells and whistles
 
    $spawner->register_programs ([$prog1, $prog2, ...]) || exit 1;
    $spawner->register_programs ([$prog1, $prog2, ...], $path) || exit 1;
+   $spawner->register_programs ({$name => $executable, ... }) || exit 1;
 
    $spawner->add_default_args ($prog, \@args);
    $spawner->add_default_args ($prog, \@args, 'pre'); 
@@ -926,31 +928,50 @@ details are scattered throughout the relevant sections of this man page.
 =item RegisterPrograms (PROGRAMS [, PATH])
 
 Tells F<MNI::Spawn> about the programs you intend to run during the
-lifetime of your program.  PROGRAMS must be a reference to a list of bare
-program names (no directory components); PATH, if it is given, must be
-either a reference to a list of directories or a string containing
-colon-separated directories.  If PATH is not given, the C<search_path>
-option is used (which in turn effectively defaults to C<$ENV{'PATH'}>).
+lifetime of your program.  PROGRAMS must be a reference to either a list
+or a hash; PATH, if it is given, must be either a reference to a list of
+directories or a string containing colon-separated directories.  If PATH
+is not given, the C<search_path> option is used (which in turn
+effectively defaults to C<$ENV{'PATH'}>).
 
-Each program listed in PROGRAMS is searched for in the directories
-listed in PATH (or C<search_path>, or C<$ENV{'PATH'}>); if any are not
-found, an appropriate error message (e.g. 'Couldn't find program "foo"')
-is printed for each missing program and C<RegisterPrograms> returns false.
+If PROGRAMS is a list reference, the list in question should be of bare
+program names (no directory components).  Each program listed in
+PROGRAMS is searched for in the directories listed in PATH (or
+C<search_path>, or C<$ENV{'PATH'}>); if any are not found, an
+appropriate error message (e.g. 'Couldn't find program "foo"') is
+printed for each missing program and C<RegisterPrograms> returns false.
 In the event of such a failure, any successful search results are I<not>
 kept---this should almost always be treated as a fatal error, so
 F<MNI::Spawn> doesn't expect that you'll continue marching blithely on.
-Only if all programs listed in PROGRAMS are found does C<RegisterPrograms>
-store the full paths for later use by C<Spawn> (in the "command
-completion" phase); it then returns true.  Thus, this is usually called
-like
+Only if all programs listed in PROGRAMS are found does
+C<RegisterPrograms> store the full paths for later use by C<Spawn> (in
+the "command completion" phase); it then returns true.  Thus, this is
+usually called like
 
    RegisterPrograms ([qw(ls rm cat cp)]) || exit 1;
 
 where we don't print an error message because C<RegisterPrograms> takes care
 of it for us.
 
+If PROGRAMS is a hash reference, the keys of the hash must be program
+names, and the values must be full paths to the executable file that you
+want to run when C<Spawn> is passed the corresponding program name.  For
+instance, you might wish to force C<Spawn> to run C<gtar> in place of
+C<tar>.  This could be accomplished as follows:
+
+   $gtar = MNI::FileUtilities::find_program ('gtar');
+   RegisterPrograms ({ tar => $gtar }) || exit 1;
+
+Later on, you might have the following:
+
+   Spawn (['tar', $taropts, $tarfile, $dir]);
+
+in which case C<Spawn> would actually run C<gtar> (or, more accurately,
+the C<gtar> found by C<MNI::FileUtilities::find_program>).
+
 C<RegisterPrograms> can be called any number of times in your program---it
-always adds to the existing list of "known programs."
+always adds to the existing list of "known programs", and silently
+overrides any programs you previously registered.
 
 See also C<find_programs>, C<find_program>, and C<search_directories> in
 L<MNI::FileUtilities>.
