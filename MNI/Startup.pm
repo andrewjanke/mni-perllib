@@ -8,7 +8,7 @@
 #@REQUIRES   : Exporter
 #@CREATED    : 1997/07/25, Greg Ward (from old Startup.pm, rev. 1.23)
 #@MODIFIED   : 
-#@VERSION    : $Id: Startup.pm,v 1.1 1997-08-06 21:45:37 greg Exp $
+#@VERSION    : $Id: Startup.pm,v 1.2 1997-08-21 20:00:49 greg Exp $
 #@COPYRIGHT  : Copyright (c) 1997 by Gregory P. Ward, McConnell Brain Imaging
 #              Centre, Montreal Neurological Institute, McGill University.
 #
@@ -180,6 +180,8 @@ my %signals =
 # we walk the list of all options to build the export list, and call
 # Exporter's import method to do all the hard work for us.
 
+sub startup;
+
 sub import
 {
    my ($classname, @imports) = @_;
@@ -204,15 +206,11 @@ sub import
 
    local $Exporter::ExportLevel = 1;    # so we export to *our* user, not
                                         # Exporter's!
-#   local $Exporter::Verbose = 1;        # for now!
    Exporter::import ('MNI::Startup', @exports);
+   startup;
 
 }  # import
 
-
-
-# Now the "let's do some work" bit -- here is where we actually set all
-# the global variables that we exported up in `import'.
 
 =head1 PROGRAM NAME AND START DIRECTORY
 
@@ -241,21 +239,6 @@ current directory.)
 
 =cut
 
-# We set $ProgramDir and $ProgramName regardless of the options in the
-# import list because $ProgramName is needed for the temp dir name and
-# various handy messages to the user.  Likewise for $StartDir and
-# $StartDirName -- $StartDir is needed by self_announce and to cleanup
-# safely (if $TmpDir is a relative path), so we always set it too.  The
-# `progname' and `startdir' options only control whether these variables
-# are exported into the user's namespace, which is controlled by `import'
-# above.
-
-($ProgramDir,$ProgramName) = $0 =~ /(.*\/)?([^\/]*)/;
-$ProgramDir = '' unless defined $ProgramDir;
-
-$StartDir = getcwd ();
-($StartDirName) = $StartDir =~ /.*\/([^\/]+)/;
-
 =head1 OPTION VARIABLES AND OPTION TABLE
 
 Most long-running, computationally intensive scripts that spend a lot of
@@ -271,7 +254,6 @@ with F<Getopt::Tabular>) to allow the end user of your program to set
 those globals.  These variables are only initialized and exported if the
 C<optvars> switch is true, and the option table is only initialized and
 exported if the C<opttable> switch is true.
-
 
 =head2 Option variables
 
@@ -375,43 +357,6 @@ This provides five boolean options (C<-verbose>, C<-execute>, C<-clobber>,
 C<-debug>, and C<-keeptmp>) along with one string option (C<-tmpdir>)
 corresponding to the six variables described above.
 
-=cut
-
-if ($options{optvars})
-{
-   $Verbose = 1;
-   $Execute = 1;
-   $Clobber = 0;
-   $Debug = 0;
-
-   my ($basetmp) = (defined ($ENV{'TMPDIR'}) ? $ENV{'TMPDIR'} : '/usr/tmp');
-   $TmpDir = ($basetmp . "/${ProgramName}_$$");
-   croak "$ProgramName: temporary directory $TmpDir already exists"
-      if -e $TmpDir;
-   $KeepTmp = 0;
-}
-
-if ($options{opttable})
-{
-   @DefaultArgs =
-      (['Basic behaviour options', 'section'],
-       ['-verbose|-quiet', 'boolean', 0, \$Verbose, 
-	'print status information and command lines of subprograms ' .
-	'[default; opposite is -quiet]' ],
-       ['-execute', 'boolean', 0, \$Execute, 
-	'actually execute planned commands [default]'],
-       ['-clobber', 'boolean', 0, \$Clobber,
-	'blithely overwrite files (and make subprograms do as well) ' .
-	'[default: -noclobber]'],
-       ['-debug', 'boolean', 0, \$Debug,
-	'spew lots of debugging info (and make subprograms do so as well) ' .
-	'[default: -nodebug]'],
-       ['-tmpdir', 'string', 1, \$TmpDir,
-	'set the temporary working directory'],
-       ['-keeptmp|-cleanup', 'boolean', 0, \$KeepTmp,
-	'don\'t delete temporary files when finished [default: -nokeeptmp]']);
-}
-
 =head1 RUNNING TIME
 
 F<MNI::Spawn> can keep track of the CPU time used by your program and any
@@ -419,13 +364,6 @@ child processes, and by the system on behalf of them.  If the C<cputimes>
 option is true, it will do just this and print out the CPU times used on
 program shutdown---but only if the program is exiting successfully
 (i.e. with a zero exit status).
-
-=cut
-
-if ($options{cputimes})
-{
-   @start_times = times;
-}
 
 =head1 SIGNAL HANDLING
 
@@ -456,14 +394,81 @@ F<sigtrap> documentation.
 
 =cut
 
-if ($options{sig})
+
+# &startup is where we actually "do some work", i.e.set all the global
+# variables that we exported up in `import'.  It's a separate subroutine
+# (called by import) because it has to be done *after* import is called,
+# and import isn't called until the module has been require'd
+# (i.e. compiled and run).
+
+sub startup
 {
-   my $sig;
-   foreach $sig (keys %signals)
+   # We set $ProgramDir and $ProgramName regardless of the options in the
+   # import list because $ProgramName is needed for the temp dir name and
+   # various handy messages to the user.  Likewise for $StartDir and
+   # $StartDirName -- $StartDir is needed by self_announce and to cleanup
+   # safely (if $TmpDir is a relative path), so we always set it too.  The
+   # `progname' and `startdir' options only control whether these variables
+   # are exported into the user's namespace, which is controlled by `import'
+   # above.
+
+   ($ProgramDir,$ProgramName) = $0 =~ /(.*\/)?([^\/]*)/;
+   $ProgramDir = '' unless defined $ProgramDir;
+
+   $StartDir = getcwd ();
+   ($StartDirName) = $StartDir =~ /.*\/([^\/]+)/;
+
+   if ($options{optvars})
    {
-      $SIG{$sig} = \&catch_signal;
+      $Verbose = 1;
+      $Execute = 1;
+      $Clobber = 0;
+      $Debug = 0;
+
+      my ($basetmp) = (defined ($ENV{'TMPDIR'}) ? $ENV{'TMPDIR'} : '/usr/tmp');
+      $TmpDir = ($basetmp . "/${ProgramName}_$$");
+      croak "$ProgramName: temporary directory $TmpDir already exists"
+         if -e $TmpDir;
+      $KeepTmp = 0;
    }
-}
+
+   if ($options{opttable})
+   {
+      @DefaultArgs =
+         (['Basic behaviour options', 'section'],
+          ['-verbose|-quiet', 'boolean', 0, \$Verbose, 
+           'print status information and command lines of subprograms ' .
+           '[default; opposite is -quiet]' ],
+          ['-execute', 'boolean', 0, \$Execute, 
+           'actually execute planned commands [default]'],
+          ['-clobber', 'boolean', 0, \$Clobber,
+           'blithely overwrite files (and make subprograms do as well) ' .
+           '[default: -noclobber]'],
+          ['-debug', 'boolean', 0, \$Debug,
+           'spew lots of debugging info (and make subprograms do so as well)' .
+           ' [default: -nodebug]'],
+          ['-tmpdir', 'string', 1, \$TmpDir,
+           'set the temporary working directory'],
+          ['-keeptmp|-cleanup', 'boolean', 0, \$KeepTmp,
+           'don\'t delete temporary files when finished ' .
+           '[default: -nokeeptmp]']);
+   }
+
+   if ($options{cputimes})
+   {
+      @start_times = times;
+   }
+
+   if ($options{sig})
+   {
+      my $sig;
+      foreach $sig (keys %signals)
+      {
+         $SIG{$sig} = \&catch_signal;
+      }
+   }
+
+}  # &startup
 
 
 =head1 CLEANUP
@@ -501,7 +506,6 @@ using the C<-tmpdir> option.  This will happen without any involvement
 from F<MNI::Startup>, though, so it has to take the possibility into
 account.)
 
-
 =cut
 
 # Now comes the chain of subroutines by which we clean up the mess made
@@ -536,6 +540,8 @@ sub cleanup
 
    if ($options{cleanup} && !$KeepTmp && defined $TmpDir && -d $TmpDir)
    {
+      local $?;                         # so we don't clobber exit status!
+
       if ($TmpDir !~ m|^/| && ! chdir $StartDir)
       {
          warn "cleanup: couldn't chdir to \"$StartDir\": $! " .
@@ -556,14 +562,9 @@ sub catch_signal
 
 END 
 {
-#    if ($?)
-#    {
-#       warn "$ProgramName: exiting with non-zero exit status\n";
-#    }
-#    else
-#    {
-#       warn "$ProgramName: exiting normally\n";
-#    }
+#    warn $?
+#       ? "$ProgramName: exiting with non-zero exit status\n"
+#       : "$ProgramName: exiting normally\n";
    cleanup;
 }
 
