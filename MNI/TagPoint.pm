@@ -76,7 +76,7 @@ sub to_string {
 
     $str .= ' "' . $self->label . '"'
       if defined($self->label);
-    
+
     return $str;
 }
 
@@ -89,7 +89,7 @@ sub to_string {
 #     ($_,$p1) = _read_point( $_ );
 #     ($_,$p2) = _read_point( $_ );
 #     ($_,$label) = _read_label( $_ );
-# }    
+# }
 
 
 

@@ -1,18 +1,18 @@
 # ------------------------------ MNI Header ----------------------------------
 #@NAME       : MNI::Batch.pm
-#@INPUT      : 
-#@OUTPUT     : 
-#@RETURNS    : 
+#@INPUT      :
+#@OUTPUT     :
+#@RETURNS    :
 #@DESCRIPTION: Routines for interfacing to the UCSF Batch Queuing System,
 #              as installed at the BIC.
-#@METHOD     : 
+#@METHOD     :
 #@GLOBALS    : yes, several (but all are kept in the package's namespace)
-#              
-#@CALLS      : 
+#
+#@CALLS      :
 #@CREATED    : 95/11/13, Greg Ward
 #@MODIFIED   : 98/11/06, Chris Cocosco: -ported from Batch.pm ... (STILL BETA!)
 #@MODIFIED   : (...see CVS for more history info)
-#@VERSION    : $Id: Batch.pm,v 1.14 2000-03-13 23:13:08 stever Exp $
+#@VERSION    : $Id: Batch.pm,v 1.15 2001-02-26 18:45:41 stever Exp $
 #-----------------------------------------------------------------------------
 require 5.002;
 
@@ -24,7 +24,8 @@ use vars qw( @ISA @EXPORT_OK %EXPORT_TAGS $ProgramName );
 
 use Exporter;
 use Carp;
-use MNI::MiscUtilities qw( timestamp userstamp shellquote ); 
+use MNI::MiscUtilities qw( timestamp userstamp shellquote );
+use MNI::Spawn;
 
 
 @ISA = qw(Exporter);
@@ -197,7 +198,7 @@ my %DefaultOptions = ( verbose          => undef,
 		       host             => '',
 		       restartable      => 1,
 		       shell            => '/bin/sh',
-		       mail_conditions  => 'cr', 
+		       mail_conditions  => 'cr',
 		       mail_address     => '',
 		       write_conditions => '',
 		       write_address    => '',
@@ -224,7 +225,7 @@ if (defined $main::ProgramName) {
     *ProgramName = \$main::ProgramName;
 } else {
     ($ProgramName = $0) =~ s|.*/||;
-}   
+}
 
 
 # We track the process ID of the batch job currently in progress.
@@ -375,12 +376,12 @@ sub _batch_optstring
     $optstring .= " -o $Options{'stdout'}" if $Options{'stdout'};
     $optstring .= " -e $Options{'stderr'}" if $Options{'stderr'};
     $optstring .= " -k" if $Options{'merge_stderr'};
-    
+
     return $optstring;
 }
 
 
-# [CC:98/11/06] - replaced the old 'set_undefined_options' with the 
+# [CC:98/11/06] - replaced the old 'set_undefined_options' with the
 #                 version from MNI::Spawn
 #               - had to copy over 'find_calling_package' as well...
 #
@@ -449,7 +450,7 @@ sub set_undefined_option
 
 =item MNI::Batch::SetOptions( option => value, ... )
 
-Set various batch-related options, documented in section L<"OPTIONS">.  
+Set various batch-related options, documented in section L<"OPTIONS">.
 Dies if any bad options are found.
 
 =cut
@@ -459,7 +460,7 @@ Dies if any bad options are found.
 #@INPUT      : ($option,$value) repeated as many time as you like, where
 #              $option is one of the valid batch options (see above for
 #              list), and $value is an appropriate value for that option.
-#              
+#
 #@OUTPUT     : 
 #@RETURNS    : 
 #@DESCRIPTION: Used to set various batch-related options, which are
@@ -483,14 +484,14 @@ sub _set_options
 {
     croak "must supply even number of arguments (option/value pairs)"
       unless (@_ % 2 == 0);
-   
+
     # Options given as parameters override the old values in %Options
     # Overrides must specify keys that currently exist in %Options
     #
     while (@_) {
 	my $key = shift;
 
-	croak "MNI::Batch: unknown option $key" 
+	croak "MNI::Batch: unknown option $key"
 	  unless exists $Options{$key};
 
 	$Options{$key} = shift;
@@ -502,7 +503,7 @@ sub _set_options
 
 Start a new batch job.  Commands for this job are then submitted by calling
 C<QueueCommand> or C<QueueCommands>.  Once all commands are queued, you must
-call C<FinishJob>.  
+call C<FinishJob>.
 
 Options described in L<"options"> may be overridden I<for this job only> by
 giving them here.
@@ -548,7 +549,7 @@ sub StartJob
 
     my $cmd = 'batch ' . _batch_optstring();
     my $lh = $Options{'loghandle'};
-    printf $lh "[%s] [%s] [%s] starting batch job: $cmd", 
+    printf $lh "[%s] [%s] [%s] starting batch job: $cmd",
                $ProgramName, userstamp(), timestamp()
 		 if $Options{'verbose'};
 
@@ -572,11 +573,11 @@ sub StartJob
 	$JobPID = 1;
 	printf $lh " (fake job)\n" if $Options{'verbose'};
     }
-    
 
-    my $sync_start = ($Options{'synchronize'} eq 'start' || 
+
+    my $sync_start = ($Options{'synchronize'} eq 'start' ||
 		      $Options{'synchronize'} eq 'both');
-    my $sync_finish = ($Options{'synchronize'} eq 'finish' || 
+    my $sync_finish = ($Options{'synchronize'} eq 'finish' ||
 		       $Options{'synchronize'} eq 'both');
     my $sync_fail =  $sync_finish && $Options{'check_status'};
 
@@ -762,8 +763,8 @@ sub Synchronize
       }
    }
 
-   # Just to be neat, we try to remove the sync dir now -- don't be 
-   # too aggressive about it, though, as other jobs might have 
+   # Just to be neat, we try to remove the sync dir now -- don't be
+   # too aggressive about it, though, as other jobs might have
    # files there!
 
    rmdir $Options{'syncdir'};
@@ -783,7 +784,7 @@ sub QueueCommand
     my $cmd = shift;
     QueueCommands( [ $cmd ], @_ );
 }
-	  
+
 
 
 =item QueueCommands( commands [,options] )
@@ -830,7 +831,7 @@ sub QueueCommands
     }
 
     map( _queue_one_command($_, $stdout, $stderr, $merge), @commands );
-    
+
     return ($start_ret, FinishJob()) if $finish_job;
 }
 
@@ -842,7 +843,7 @@ sub _queue_one_command
 {
     my( $command, $stdout, $stderr, $merge ) = @_;
     my $program;
-    
+
     if (ref $command eq 'ARRAY') {
 	$program = $command->[0];
 	$command = shellquote (@$command) 
@@ -887,6 +888,65 @@ fi
 END
     }
 }
+
+
+
+=item JobStatus( jobid [,option => value ...] )
+
+Attempt to get the status of specified job, using the
+command C<baq>.  Use C<queue => queuename> to check
+the non-default queue.
+
+If successful, one of the strings described in the C<baq>
+manual page will be returned.  If the status cannot
+be determined, C<undef> is returned.
+
+Any L<MNI::Spawn> options may be overridden, except
+I<batch> and I<stdout>.  If I<stderr> is not specified,
+it is set to C<UNTOUCHED> (see L<MNI::Spawn>).
+
+To suppress output from C<MNI::Spawn> and from C<baq>,
+you need to specify C<verbose => 0, stderr => /dev/null>.
+
+=cut
+
+sub JobStatus {
+    my( $jobid, %opts ) = @_;
+    my @cmd = ('baq');
+    my @baq_out;
+
+    if ( exists $opts{queue} ) {
+	push(@cmd,'-Q',$opts{queue});
+	delete $opts{queue};
+    }
+
+    $opts{stderr} = UNTOUCHED
+      unless exists $opts{stderr};
+
+    my $spawner = new MNI::Spawn( %opts, batch => 0 );
+    $spawner->register_programs(['baq']) or return undef;
+    $spawner->spawn( \@cmd, stdout => \@baq_out );
+
+    # The baq output contains lines of the form
+    #
+    #luciana:
+    #long: job 1579941: started.
+    #ID        Job                  Owner        Time     State       
+    # 1579941  final.xfm            stever       570      running     
+    #
+    #print "Looking for '$jobid'\n";
+    local $_;
+    foreach (@baq_out) {
+	#print "$_\n";
+	if ( /^\s*$jobid\s/ ) {
+	    my @words = split;
+	    return pop(@words);
+	}
+    }
+    return undef;
+}
+
+
 
 
 =back

@@ -174,7 +174,7 @@ sub add_comment {
     push( @{$self->{comment}}, @_ );
     $self->{_dirty} = 1;
 }
-    
+
 
 
 # Return the TagPoint referred to by the parameter
@@ -285,7 +285,7 @@ sub volume1 {
 			       volume1 => $new_value );
         $self->{_dirty} = 1;
     }
-    
+
     return $self->{set}->[$index]->volume1;
 }
 
@@ -312,7 +312,7 @@ sub volume2 {
 			       volume2 => $new_value );
         $self->{_dirty} = 1;
     }
-    
+
     return $self->{set}->[$index]->volume2;
 }
 
@@ -341,7 +341,7 @@ sub all_labels {
     local $_;
     return map { $_->label || () } @{$self->{set}};
 }
-				 
+
 
 # Write tag file data.
 #
@@ -431,16 +431,16 @@ sub load {
 	}
 
 	($_,$val) = _read_int( $_ );
-	push(@args, 'weight' => $val) if defined($val);	  
+	push(@args, 'weight' => $val) if defined($val);
 
 	($_,$val) = _read_int( $_ );
-	push(@args, 'structure_id' => $val) if defined($val);	  
+	push(@args, 'structure_id' => $val) if defined($val);
 
 	($_,$val) = _read_int( $_ );
-	push(@args, 'patient_id' => $val) if defined($val);	  
+	push(@args, 'patient_id' => $val) if defined($val);
 
 	($_,$val) = _read_label( $_ );
-	push(@args, 'label' => $val) if defined($val);	  
+	push(@args, 'label' => $val) if defined($val);
 
 	push( @{$self->{set}}, new MNI::TagPoint( @args ) );
 

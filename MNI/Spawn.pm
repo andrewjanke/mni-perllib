@@ -15,7 +15,7 @@
 #@CREATED    : 1997/07/07, Greg Ward (loosely based on JobControl.pm, rev 2.8)
 #@MODIFIED   : 1998/11/06, Chris Cocosco (added batch support) -- STILL BETA!
 #
-#@VERSION    : $Id: Spawn.pm,v 1.14 1999-11-30 17:11:11 crisco Exp $
+#@VERSION    : $Id: Spawn.pm,v 1.15 2001-02-26 18:45:41 stever Exp $
 #@COPYRIGHT  : Copyright (c) 1997 by Gregory P. Ward, McConnell Brain Imaging
 #              Centre, Montreal Neurological Institute, McGill University.
 #
@@ -79,7 +79,7 @@ if (defined $main::ProgramName)
 else
 {
    ($ProgramName = $0) =~ s|.*/||;
-}   
+}
 
 
 # ----------------------------------------------------------------------
@@ -380,15 +380,15 @@ sub spawn
    {
        croak "spawn: can't capture stdout or stderr when running through batch"
 	   if ($stdout_mode == CAPTURE || $stderr_mode == CAPTURE);
-       
+
        if( $stdout_mode == REDIRECT && $stdout =~ /^\s*>/ ||
 	   $stderr_mode == REDIRECT && $stderr =~ /^\s*>/    ) {
 
 	   carp <<_END_
 Spawn: Redirection filenames prefixed by \'>\' or \'>>\' are ignored when 
 running through batch!
-The action taken will be \'append\' if no Batch Job is currently 
-opened or \'clobber (overwrite)\' if you already have opened 
+The action taken will be \'append\' if no Batch Job is currently
+opened or \'clobber (overwrite)\' if you already have opened
 a job (by means of Batch::StartJob() ).
 
 _END_
@@ -467,7 +467,7 @@ _END_
 
    $ENV{'suppress_announce'} = 
       ($stdout_mode == CAPTURE) ||
-      ($self->{'verbose'} && $stdout_mode == UNTOUCHED);         
+      ($self->{'verbose'} && $stdout_mode == UNTOUCHED);
 
 
    # Now, we finally get to run the command.  This is done via either

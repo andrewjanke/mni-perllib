@@ -1,3 +1,10 @@
+2001-02-26  Steve M. Robbins  <steve@nyongwa.montreal.qc.ca>
+
+	* MNI.pm: Set VERSION to 0.07.
+
+	* MNI/Batch.pm (JobStatus): New.  Return status of job, as
+	determined by "baq".
+
 2000-09-22  Steve ROBBINS  <stever@bic.mni.mcgill.ca>
 
 	* MNI/TagSet.pm (new): option name is `comment' not `comments'.

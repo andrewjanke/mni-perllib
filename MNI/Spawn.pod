@@ -246,8 +246,6 @@ captured to a variable, or merged with its standard output.
 
 =item * hand things over to C<batch>, if appropriate
 
-Not yet implemented.
-
 =item * fork
 
 =item * in child process: redirect and C<exec>

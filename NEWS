@@ -1,3 +1,12 @@
+Changes in Release 0.07
+
+* MNI::Batch::JobStatus() will attempt to divine status of
+  submitted job, using "baq".
+
+* MNI::TagPoint and MNI::TagSet are the new interface to tag
+  files; MNI::Tag is deprecated.
+
+
 Changes in Release 0.06
 
 * Spawn::Spawn( ..., batch => 1) now invokes Batch 
