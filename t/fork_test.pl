@@ -29,7 +29,7 @@ sub file_contents
    my @contents = <F>;
    chomp @contents;
    close (F);
-   if ($DEBUG)
+   if ($DEBUG >= 2)
    {
       print "contents of file \"$filename\":\n";
       map { printf "%d: >%s<\n", $_, $contents[$_] } 0 .. $#contents;
@@ -53,7 +53,7 @@ sub fork_test
    {
 #      open (TTY, ">/dev/tty");
       print "in child; pid=$$, now redirecting STDOUT and STDERR\n"
-         if $DEBUG;
+         if $DEBUG >= 3;
       open (STDOUT, ">$stdout_fifo");
       open (STDERR, ">$stderr_fifo");
       select (STDERR); $| = 1; print '';
@@ -80,7 +80,7 @@ sub fork_test
    else                                 # in the parent?
    {
       print "in parent; mypid=$$, child=$pid, reading child's stdout/stderr\n"
-         if $DEBUG;
+         if $DEBUG >= 3;
       open (OUT, "<$stdout_fifo");
       open (ERR, "<$stderr_fifo");
       my @out = <OUT>;
@@ -90,7 +90,7 @@ sub fork_test
 
       chomp @out;
       chomp @err;
-      if ($DEBUG)
+      if ($DEBUG >= 2)
       {
          print "child stdout:\n"; 
          map { printf "%d: >%s<\n", $_, $out[$_] } 0 .. $#out;
@@ -101,7 +101,7 @@ sub fork_test
       my $done_pid = waitpid ($pid, 0);
       die "no child to wait for!\n" if $done_pid == -1;
       die "wrong child exited!\n" if $done_pid != $pid;
-      print "child's termination status = " . ($?) . "\n" if $DEBUG;
+      print "child's termination status = " . ($?) . "\n" if $DEBUG >= 2;
       return ($?, \@out, \@err);
    }
 }
