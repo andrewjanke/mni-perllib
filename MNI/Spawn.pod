@@ -354,25 +354,41 @@ Trust me, though---at some point, trying to trace the complicated
 history of some data in the absence of other information, you'll be glad
 to have it.)
 
-A useful peculiarity of C<verbose> (and its close companion C<execute>)
-is that if it is undefined, it will take its value from
-C<$main::Verbose>.  This ties in neatly with the global variable
-C<$Verbose> exported (presumably into package C<main>) by
-F<MNI::Startup>; the fact that copying C<$main::Verbose> to
-F<MNI::Spawn>'s C<verbose> option happens quite late (usually on the
-first call to C<Spawn>) means that you can change C<$Verbose> in your
-main program---say, by tying it to a command-line option---anywhere up
-to the first C<Spawn> call, and it will still affect C<Spawn>'s
-behaviour.  This---along with the similar situation for the C<execute>
-option---is the only time C<Spawn> will change one of its options behind
-your back (i.e. without you calling C<SetOptions>).  C<verbose> is
-undefined by default, so this feature will be used in almost every
-program you write with F<MNI::Spawn>.  Note that since the
-F<MNI::Startup> module sets C<$main::Verbose> to true, the C<verbose>
-option (assuming you use F<MNI::Startup> and F<MNI::Spawn> in concert)
-effectively defaults to true.  However, you should keep in mind that
-this happens through a little sleight-of-hand rather than in the obvious
-way.
+A useful peculiarity of C<verbose> (and its close companion C<execute>) is
+that if it is undefined, it will take its value from the C<$Verbose> global
+in the calling package.  This ties in neatly with the global variable
+C<$Verbose> exported (presumably into package C<main>) by F<MNI::Startup>;
+the fact that copying C<$main::Verbose> to F<MNI::Spawn>'s C<verbose>
+option happens quite late (usually on the first call to C<Spawn>) means
+that you can change C<$Verbose> in your main program---say, by tying it to
+a command-line option---anywhere up to the first C<Spawn> call, and it will
+still affect C<Spawn>'s behaviour.  This---along with the similar situation
+for the C<execute> option---is the only time C<Spawn> will change one of
+its options behind your back (i.e. without you calling C<SetOptions>).
+C<verbose> is undefined by default, so this feature will be used in almost
+every program you write with F<MNI::Spawn>.  Note that since the
+F<MNI::Startup> module sets its C<$Verbose> to true, the C<verbose> option
+(assuming you use F<MNI::Startup> and F<MNI::Spawn> in concert) effectively
+defaults to true.  However, you should keep in mind that this happens
+through a little sleight-of-hand rather than in the obvious way.
+
+Also, the above explanation assumes that C<Spawn> is being called from
+the same package where you C<use MNI::Startup>---usually, C<main>.  If
+you call C<spawn> from other packages, you should either set the
+C<verbose> and C<execute> options explicitly, or arrange to "borrow" the
+C<$Verbose> and C<$Execute> globals from F<MNI::Startup>.  You can
+actually make aliases to these variables in your module with the
+following incantation:
+
+   *Verbose = \$MNI::Startup::Verbose;
+   *Execute = \$MNI::Startup::Execute;
+
+(see pp. 51-52 of the I<Programming Perl, 2nd ed.> for more
+information).  Then, when C<Spawn> goes poking into your module for the
+value of its C<$Verbose> global, it will actually fetch the C<$Verbose>
+global from F<MNI::Startup>---which, due to F<MNI::Startup> presumably
+exporting C<$Verbose> to C<main>, will also be the value of C<$Verbose>
+in your main program.
 
 =item C<execute> (default: undefined)
 
