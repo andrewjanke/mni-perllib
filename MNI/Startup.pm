@@ -8,7 +8,7 @@
 #@REQUIRES   : Exporter
 #@CREATED    : 1997/07/25, Greg Ward (from old Startup.pm, rev. 1.23)
 #@MODIFIED   : 
-#@VERSION    : $Id: Startup.pm,v 1.4 1997-08-26 23:15:57 greg Exp $
+#@VERSION    : $Id: Startup.pm,v 1.5 1997-08-27 14:14:32 greg Exp $
 #@COPYRIGHT  : Copyright (c) 1997 by Gregory P. Ward, McConnell Brain Imaging
 #              Centre, Montreal Neurological Institute, McGill University.
 #
@@ -419,11 +419,17 @@ sub startup
    # are exported into the user's namespace, which is controlled by `import'
    # above.
 
-   ($ProgramDir,$ProgramName) = $0 =~ /(.*\/)?([^\/]*)/;
+   ($ProgramDir,$ProgramName) = $0 =~ m|^(.*/)?([^/]*)$|;
    $ProgramDir = '' unless defined $ProgramDir;
 
+   # Note that if the cwd on startup in '/', $StartDirName will be undefined.
+   # This makes sense to me, as there is simply no "trailing name" component
+   # in '/' -- we can't just pretend it's there but empty (like with 
+   # a missing directory component).
+
    $StartDir = getcwd ();
-   ($StartDirName) = $StartDir =~ /.*\/([^\/]+)/;
+   $StartDir .= '/' unless substr ($StartDir, -1, 1) eq '/';
+   ($StartDirName) = $StartDir =~ m|/([^/]+)/$|;
 
    if ($options{optvars})
    {
@@ -433,7 +439,7 @@ sub startup
       $Debug = 0;
 
       my ($basetmp) = (defined ($ENV{'TMPDIR'}) ? $ENV{'TMPDIR'} : '/usr/tmp');
-      $TmpDir = ($basetmp . "/${ProgramName}_$$");
+      $TmpDir = ($basetmp . "/${ProgramName}_$$/");
       croak "$ProgramName: temporary directory $TmpDir already exists"
          if -e $TmpDir;
       $KeepTmp = 0;
@@ -688,7 +694,7 @@ sub self_announce
    $args = \@ARGV unless defined $args;
 
    # don't do it if it would go to a terminal (unless we're forced to)
-   return if !$force && -t fileno ($log) && 
+   return if !$force && -t fileno ($log);
 
    printf $log ("[%s] [%s] running:\n", 
                 userstamp (undef, undef, $StartDir), timestamp ());
