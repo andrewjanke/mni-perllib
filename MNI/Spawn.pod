@@ -700,15 +700,45 @@ to this.)
 
 If either C<stdout> or C<stderr> is a simple string, that string will be
 treated as a filename and the corresponding stream in the child process
-will be redirected to that file.  Since this "filename" is just used as
-the second parameter to C<open>, you can explicitly specify whether the
-file should be clobbered or appended to by prepending C<'E<gt>'> or
-C<'E<gt>E<gt>'>; normally, though, you can let C<Spawn> make this
-decision based on the value of its C<clobber> option.  If you wish to
-redirect to an already-open file, just supply the name of the filehandle
-with C<'&'> prepended, e.g. C<'&MYLOG'> to redirect the child's stdout
-to the C<MYLOG> filehandle (this is also a feature of C<open>, not of
-C<Spawn>).
+will be redirected to that file.  Normally, you can leave it at that and
+let C<Spawn> decide---using its C<clobber> option---whether the file in
+question should be clobbered or appended to.  That is, you supply a bare
+filename, and C<Spawn> will prepend either C<'E<gt>'> (to clobber) or
+C<'E<gt>E<gt>'> (to append), and use the resulting string as the second
+parameter to C<open>.
+
+However, if your string already starts with C<'E<gt>'>, then C<Spawn>
+leaves it alone, allowing you to choose whether to clobber or append
+regardless of C<Spawn>'s C<clobber> option.  To clarify:
+
+   Spawn ($cmd, stdout => "log");                 # maybe clobber, maybe append
+   Spawn ($cmd, stdout => "log", clobber => 1);   # always clobber
+   Spawn ($cmd, stdout => "log", clobber => 0);   # always append
+   Spawn ($cmd, stdout => ">log");                # always clobber
+   Spawn ($cmd, stdout => ">>log");               # always append
+
+Assiduous readers of the Perl documentation will note that C<open> lets
+you "open" more than just a filename: you can also redirect your child
+program's standard error or standard output to an already-open
+filehandle.  If you're doing it yourself, this is as simple as:
+
+   open (LOG, ">log") || die "couldn't create log: $!\n";
+   open (STDOUT, ">&LOG") || die "couldn't redirect stdout: $!\n";
+
+When you're trying to persuade C<Spawn> to do this for you, it's a tad
+more involved.  First, since C<Spawn> lives in a different package from
+your filehandle, you have to specify the filehandle's package.  Also,
+while---according to the above rules---you could get away with supplying
+C<'&LOG'> as the "filename" and letting C<Spawn> prepend C<'E<gt>'> or
+C<'E<gt>E<gt>'> as appropriate, this is not recommended.  According to
+the Perl documentation, the modes used for the two open statements
+(one to open the actual file, one to duplicate the filehandle) should be
+the same.  Since C<Spawn> doesn't know how you originally opened your
+file, you should supply the open mode (C<'E<gt>'> or C<'E<gt>E<gt>'>).
+For example:
+
+   open (LOG, ">log") || die "couldn't create log: $!\n";
+   Spawn ($cmd, stdout => ">&main::LOG");
 
 =head2 Capture to a variable
 
@@ -749,7 +779,7 @@ F<MNI::Spawn> provides a special constant C<UNTOUCHED>:
 
 will redirect the child's stdout, but leave its stderr alone---so it
 will wind up on the stderr of your program.
-<
+
 Finally, if you want to force C<Spawn> to merge stderr with stdout, a
 second special constant, C<MERGE>, is provided:
 
