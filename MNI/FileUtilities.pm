@@ -17,7 +17,7 @@
 #@REQUIRES   : Exporter
 #@CREATED    : 1997/04/25, Greg Ward (from file_utilities.pl, revision 1.16)
 #@MODIFIED   : 
-#@VERSION    : $Id: FileUtilities.pm,v 1.5 1997-07-22 04:05:56 greg Exp $
+#@VERSION    : $Id: FileUtilities.pm,v 1.6 1997-08-13 13:56:12 greg Exp $
 #@COPYRIGHT  : Copyright (c) 1997 by Gregory P. Ward, McConnell Brain Imaging
 #              Centre, Montreal Neurological Institute, McGill University.
 #
@@ -31,7 +31,7 @@ package MNI::FileUtilities;
 use strict;
 use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS);
 
-require 5.003;
+require 5.002;
 require Exporter;
 require AutoLoader;
 
@@ -1148,8 +1148,10 @@ F<MNI::FileUtilities>.
 #@COMMENTS   : there is a File::statfs (or maybe Filesystem::stat?) module
 #              mentioned in the module list, but no sign of it on CPAN.  Hmmm.
 #-----------------------------------------------------------------------------
-sub statfs                      # this ought to be made more standard...
+sub statfs
 {
+   require 5.003;                       # for $^O
+
    my ($path) = @_;
    my ($buf, $r);
    my ($type, $pad, $bsize, $frsize, $blocks, $bfree, $bavail);
