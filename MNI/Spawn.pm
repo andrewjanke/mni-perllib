@@ -13,8 +13,9 @@
 #              MNI::FileUtilities, MNI::PathUtilities, MNI::MiscUtilities
 #@REQUIRES   : Exporter
 #@CREATED    : 1997/07/07, Greg Ward (loosely based on JobControl.pm, rev 2.8)
-#@MODIFIED   : 
-#@VERSION    : $Id: Spawn.pm,v 1.11 1997-10-01 20:18:46 greg Rel $
+#@MODIFIED   : 1998/11/06, Chris Cocosco (added batch support) -- STILL BETA!
+#
+#@VERSION    : $Id: Spawn.pm,v 1.12 1999-05-12 20:59:59 stever Exp $
 #@COPYRIGHT  : Copyright (c) 1997 by Gregory P. Ward, McConnell Brain Imaging
 #              Centre, Montreal Neurological Institute, McGill University.
 #
@@ -333,7 +334,7 @@ sub spawn
    }
 
 
-   # Inherit `verbose' and `execute' options from variables in main
+   # Inherit `verbose' and `execute' options from variables in calling
    # package if they aren't already defined
 
    $self->set_undefined_option ('verbose', 'Verbose');
@@ -342,6 +343,8 @@ sub spawn
 
    # Complete the command (ie. program name to full path, insert
    # options fore and aft)
+   # 
+   # if in batch mode, then let batch print the commands it executes
 
    ($command, $program) = $self->complete_command
       ($command, $self->{verbose} && !$self->{batch});
@@ -371,17 +374,29 @@ sub spawn
       $stderr_mode = MERGE;
    }
 
-
    # If we're in `batch' mode, pass this one off to the batch system
 
    if ($self->{batch})
    {
-      croak "spawn: can't capture stdout or stderr when running through batch"
-         if ($stdout_mode == CAPTURE || $stderr_mode == CAPTURE);
+       croak "spawn: can't capture stdout or stderr when running through batch"
+	   if ($stdout_mode == CAPTURE || $stderr_mode == CAPTURE);
 
-      confess "spawn: batch mode not implemented yet";
+       # [CC] inspired by &JobControl::Spawn ...
+       #
+       ################################################################
+       # TO DO: thoroughly test all the possible combinations of
+       #        values and modes for $stdout & $stderr; refer to
+       #        &output_mode, default (initial) values, etc. and 
+       #        to MNI/Batch.pm (to see how different values are used)
+       #        [CC:98/11/06]
+       ################################################################
+       #
+       croak "Batch package not loaded -- you must do \"use MNI::Batch;\""
+	   if (! defined &MNI::Batch::QueueCommand);
+       &MNI::Batch::QueueCommand( $command, "", 
+			    $stdout, $stderr, ($stderr_mode == MERGE));
+       return 0;
    }
-
 
    # Figure out how to open files ('>' to overwrite or '>>' to append), and
    # prepend that to $stdout and $stderr if they don't already have such a

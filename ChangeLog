@@ -1,0 +1,21 @@
+Wed May 12 16:56:06 1999  Steve ROBBINS  <stever@bic.mni.mcgill.ca>
+
+	* MNI/Batch.pm: new file.
+	* MNI/Spawn.pm: Chris Cocosco's batch enhancements, a port from
+	older batch code of Greg.
+
+Wed May 12 16:51:54 1999  Steve ROBBINS  <stever@bic.mni.mcgill.ca>
+
+	* ChangeLog: new file.
+
+	* Initial import of Greg Ward's MNI perl library.  This is based
+ 	on the version 0.05 sources found in ~greg/src/libperl/mnilib/
+	with the following removals:
+
+	Getopt: released in own package ``Getopt::Tabular''.
+	Makefile.old: built file (from Makefile.PL)
+	junk: directory full of assorted test code
+	log2: contains the message `junk/shred: this goes to log2'
+	mni_perllib-0.05.tar.gz: tar package of code
+	t/getopt.pl: symlink to Getopt::Tabular test code
+
