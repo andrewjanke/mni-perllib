@@ -9,7 +9,7 @@
 #              static data (eg. model files).
 #@CREATED    : 
 #@MODIFIED   : 
-#@VERSION    : $Id: DataDir.pm.in,v 1.3 1997-09-17 22:18:46 greg Exp $
+#@VERSION    : $Id: DataDir.pm.in,v 1.4 1997-09-23 20:27:48 greg Rel $
 #@COPYRIGHT  : Copyright (c) 1997 by Gregory P. Ward, McConnell Brain Imaging
 #              Centre, Montreal Neurological Institute, McGill University.
 #
@@ -167,7 +167,7 @@ sub install_dir
    $dir = search_directories ($package_name, \@search_path, '-d')
       || $search_path[0];
    normalize_dirs ($dir);
-   $dir . $package_name;
+   $dir . $package_name . '/';
 }
 
 
@@ -183,9 +183,13 @@ sub check_data
 {
    my ($dir, $files) = @_;
 
+   croak "MNI::DataDir::check_data: invalid data directory \"$dir\""
+      unless -d $dir;
+   croak "MNI::DataDir::check_data: \$files must be a list ref"
+      unless ref $files eq 'ARRAY';
    my @files = map ($dir . $_, @$files);
    check_files (\@files) 
-      || die "Some required data files not found in $dir\n";
+      || die "$program_name: some required data files not found in $dir\n";
 }
 
 =back
