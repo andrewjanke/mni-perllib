@@ -15,7 +15,7 @@
 #@CREATED    : 1997/07/07, Greg Ward (loosely based on JobControl.pm, rev 2.8)
 #@MODIFIED   : 1998/11/06, Chris Cocosco (added batch support) -- STILL BETA!
 #
-#@VERSION    : $Id: Spawn.pm,v 1.15 2001-02-26 18:45:41 stever Exp $
+#@VERSION    : $Id: Spawn.pm,v 1.16 2001-06-10 02:14:06 crisco Exp $
 #@COPYRIGHT  : Copyright (c) 1997 by Gregory P. Ward, McConnell Brain Imaging
 #              Centre, Montreal Neurological Institute, McGill University.
 #
@@ -563,7 +563,8 @@ sub catch_warnings
 #@RETURNS    : 
 #@DESCRIPTION: 
 #@CREATED    : 1997/07/07, GPW
-#@MODIFIED   : 
+#@MODIFIED   : [CC:2001/06/09] also try main::$varname if the calling package
+#                              doesn't define/export $varname               
 #-----------------------------------------------------------------------------
 sub set_undefined_option
 {
@@ -573,11 +574,17 @@ sub set_undefined_option
    return if defined $self->{$option};
 
    my $package = find_calling_package;
-   carp "spawn: fallback variable $package\::$varname undefined " .
-        "for option $option"
-#      unless exists ${$package . '::'}{$varname};
-      unless defined ${ $package . '::' . $varname };
-   $self->{$option} = ${ $package . '::' . $varname }
+   if( defined ${ $package . '::' . $varname } ) {
+      $self->{$option} = ${ $package . '::' . $varname };
+   }
+   elsif( defined ${ 'main::' . $varname } ) {
+      $self->{$option} = ${ 'main::' . $varname };
+   }
+   else {
+       carp "spawn: neither of fallback variables " . 
+	   "$package\::$varname or main\::$varname are defined " .
+	   "for option $option";
+   }
 }
 
 

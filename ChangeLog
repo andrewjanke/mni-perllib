@@ -1,3 +1,9 @@
+2001-06-09  Chris Cocosco  <crisco@bic.mni.mcgill.ca>
+
+	* MNI/Spawn.pm (set_undefined_option): also try main::$varname if
+	the calling package doesn't define/export $varname (bugfix for
+	MNI/Batch.pm::JobStatus)
+
 2001-02-26  Steve M. Robbins  <steve@nyongwa.montreal.qc.ca>
 
 	* MNI/Batch.pm (GetJobid): New.  Returns ID of currently-open job.
