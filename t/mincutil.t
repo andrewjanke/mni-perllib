@@ -83,8 +83,8 @@ test (@history == 2 &&
       $history[0] =~ /mincmath -add/ &&
       $history[1] =~ /mincreshape -coronal/);
 
-system 'cp', $testvol, $testcopy;
-die "cp failed" if $?;
+system ('cp', $testvol, $testcopy) == 0 or die "cp failed";
+chmod (0644, $testcopy) == 1 or die "couldn't chmod $testcopy: $!";
 
 $fake_history = sprintf ('[%s] [%s] %s %s',
                          userstamp ('user', 'host', '/foo/bar'),
