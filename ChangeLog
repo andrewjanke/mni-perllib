@@ -1,3 +1,17 @@
+Thu May 13 19:33:40 1999  Steve ROBBINS  <stever@bic.mni.mcgill.ca>
+
+	* t/batch.t: new file.  Start of MNI::Batch regression tests.
+
+	* MNI/Batch.pm (Synchronize): rearrange the code slightly.  Returns
+	true if -noexecute.
+
+	* MNI/Batch.pm (QueueCommands): fix bug that prevented method
+	from working.
+
+	* MNI/Batch.pm: add pod documentation.  Remove $fakeJobPID.
+
+	* MNI/Batch.pm (sync_file_name): folded into create_sync_file().
+
 Wed May 12 18:52:39 1999  Steve ROBBINS  <stever@bic.mni.mcgill.ca>
 
 	* MANIFEST: add MNI/Batch.pm.

@@ -20,7 +20,7 @@ package MNI::Batch;		# just for namespace protection,
 				# between subs
 use strict;
 use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS
-            %Options %SyncFiles $JobPID $fakeJobPID %JobName
+            %Options %SyncFiles $JobPID %JobName
             $ProgramName/;
 use Exporter;
 use Carp;
@@ -30,6 +30,35 @@ use MNI::MiscUtilities qw( timestamp userstamp shellquote);
 @EXPORT_OK = qw(StartJob FinishJob Synchronize QueueCommand QueueCommands);
 %EXPORT_TAGS = (all => [@EXPORT_OK]);
 
+
+=head1 NAME
+
+MNI::Batch - execute commands via the UCSF Batch Queuing System
+
+=head1 SYNOPSIS
+
+  use MNI::Batch qw(:all);
+
+  MNI::Batch::SetOptions( Queue => long, Synchronize = 'finish' );
+
+  StartJob( 'doit', 'logfile', undef, 1 );
+  QueueCommand( 'ls -lR' );
+  QueueCommand( 'gzip *.ps' );
+  FinishJob();
+
+  QueueCommands( [ 'mritotal this.mnc this.xfm', 'gzip this.mnc' ] );
+
+  Synchronize( 'finish', 3600, 60, 3600*9 ) 
+    or die "jobs took longer than nine hours!";
+
+=head1 DESCRIPTION
+
+F<MNI::Batch> provides a method to submit shell commands to the batch
+queuing system.
+
+=over 4
+
+=cut
 
 # Package options (can be changed with &SetOptions)
 
@@ -87,9 +116,10 @@ use MNI::MiscUtilities qw( timestamp userstamp shellquote);
 # called).
 
 $JobPID = 0;
-$fakeJobPID = 0;		# used to ensure correct verbose output 
-                                #   in -noexecute mode
 %JobName = ();                  # map job pid -> name
+%SyncFiles = ();                # map job pid -> filename hash
+                                # the filename hash maps condition to filename
+
 
 # [CC] inspired by (errr, "copied" from ;-) MNI::Spawn.pm 
 #		  
@@ -127,6 +157,9 @@ sub gen_batch_options
    $options .= " -o $stdout" if $stdout;
    $options .= " -e $stderr" if $stderr;
    $options .= " -k" if $merge;
+
+   # Should we croak if $stdout && $stderr && $merge ?
+
    $options;
 }
 
@@ -155,6 +188,7 @@ sub find_calling_package
    $package;
 }
 
+
 # ------------------------------ MNI Header ----------------------------------
 #@NAME       : set_undefined_option
 #@INPUT      : 
@@ -179,18 +213,12 @@ sub set_undefined_option
 }
 
 
-sub sync_file_name
-{
-   my ($condition, $dir, $job, $host, $pid) = @_;
-   sprintf ("%s/%s_%s-%d.%s", $dir, $job, $host, $pid, $condition);
-}
-
-
 sub create_sync_file
 {
    my ($condition, $dir, $job_name, $host, $job_pid, $hash) = @_;
 
-   my $file = &sync_file_name ($condition, $dir, $job_name, $host, $job_pid);
+   my $file = sprintf ("%s/%s_%s-%d.%s", 
+		       $dir, $job_name, $host, $job_pid, $condition);
    print BATCH <<END;
 if test ! -d $dir; then mkdir -p $dir || exit 1; fi
 touch $file || exit 1
@@ -198,6 +226,13 @@ END
    $hash->{$job_pid}{$condition} = $file;
 }
 
+
+=item MNI::Batch::SetOptions( option => value, ... )
+
+Used to set various batch-related options, which are briefly documented in the
+code.  Dies if any bad options are found.
+
+=cut
 
 # ------------------------------ MNI Header ----------------------------------
 #@NAME       : &SetOptions
@@ -226,15 +261,23 @@ sub SetOptions
       $val = shift @optval;
 
       croak ("Unmatched option $opt")
-	 unless defined $val;
+	unless defined $val;
 
-      croak ("Unknown option $opt") unless
-	 exists $Options{$opt};
+      croak ("Unknown option $opt") 
+	unless exists $Options{$opt};
 
       $Options{$opt} = $val;
    }
 }
 
+
+=item StartJob( jobname, stdout, stderr, merge )
+
+Create a new job,
+Opens a pipe to `batch', into which commands may be fed by calling
+QueueCommand.
+
+=cut 
 
 # ------------------------------ MNI Header ----------------------------------
 #@NAME       : &StartJob
@@ -263,19 +306,13 @@ sub StartJob
    &set_undefined_option( 'Execute', 'Execute');
 
    croak ("StartBatchJob: already an open batch job")
-      if ($JobPID || $fakeJobPID);
+     if ($JobPID);
 
    $options = &gen_batch_options ($jobname, $stdout, $stderr, $merge);
    my $lh = $Options{'LogHandle'};
    printf $lh "[%s] [%s] [%s] starting batch job: batch%s", 
       $ProgramName, userstamp(), timestamp(), $options
       if $Options{'Verbose'};
-
-   $fakeJobPID= 1;
-   unless( $Options{'Execute'}) {
-       print $lh "\n" if $Options{'Verbose'}; # required for pretty output
-       return 0;
-   }
 
    # There is a problem with this code: if `batch' starts up fine, but
    # then bombs due to an error, I don't know how to detect it -- I
@@ -289,9 +326,15 @@ sub StartJob
    # error conditions (hence the &CheckOutputPath on $stdout and
    # $stderr), and 2) check $? when we close the pipe, in &FinishJob.
 
-   $JobPID = open (BATCH, "|batch$options");
-   croak ("Unable to open pipe to batch: $!\n") unless $JobPID;
-   printf $lh " (job %d)\n", $JobPID if $Options{'Verbose'};
+   if ( $Options{'Execute'} ) {
+       $JobPID = open (BATCH, "|batch$options");
+       croak ("\nUnable to open pipe to batch: $!\n") unless $JobPID;
+       printf $lh " (job %d)\n", $JobPID if $Options{'Verbose'};
+   } else {
+       $JobPID = 1;
+       printf $lh " (fake job)\n" if $Options{'Verbose'};
+       return 1;
+   }
 
    $JobName{$JobPID} = $jobname;
 
@@ -311,9 +354,15 @@ END
                          $ENV{'HOST'}, $JobPID, \%SyncFiles);
    }
 
-   $JobPID || $fakeJobPID;
+   $JobPID;
 }  # &StartJob
 
+
+=item FinishJob( [delay] )
+
+Close the currently-opened job.  Optionally, sleep for I<delay> seconds.
+
+=cut
 
 # ------------------------------ MNI Header ----------------------------------
 #@NAME       : &FinishJob
@@ -331,16 +380,19 @@ sub FinishJob
 {
    croak ("MNI::Batch::FinishJob: wrong number of arguments")
       unless (@_ <= 1);
+
+   croak ("MNI::Batch::FinishJob: no batch job started")
+      unless ($JobPID);
+
    my ($sleeptime) = @_;
 
    my $lh = $Options{'LogHandle'};
    print $lh " [submitting queued commands]\n" if $Options{'Verbose'};
 
-   croak ("MNI::Batch::FinishJob: no batch job started")
-      unless ($JobPID || $fakeJobPID);
-
-   $fakeJobPID= 0;
-   return 0 unless $Options{'Execute'};
+   if ( ! $Options{'Execute'} ) {
+       $JobPID = 0;
+       return;
+   }
 
    if ($Options{'Synchronize'} eq "finish" || $Options{'Synchronize'} eq "both")
    {
@@ -363,6 +415,19 @@ END
    sleep $sleeptime if defined $sleeptime;
 }
 
+
+=item Synchronize( onwhat, initial_delay [,periodic_delay [,timeout]] )
+
+Waits for all pending jobs to start or finish (depending on the value of
+onwhat) by periodically checking for the existence of synchronization files.
+
+Returns 0 if we timed out waiting for jobs to finish (ie. if timeout was given
+and the total delay exceeded it) 1 otherwise.
+
+The commands to create sync files are automatically inserted into your job by
+StartJob and FinishJob, depending on the value of the Synchronize option.
+
+=cut
 
 # ------------------------------ MNI Header ----------------------------------
 #@NAME       : &Synchronize
@@ -392,25 +457,25 @@ sub Synchronize
    croak ("MNI::Batch::Synchronize: wrong number of arguments") 
       unless @_ >= 2 && @_ <= 4;
    my ($condition, $initial_delay, $periodic_delay, $timeout) = @_;
-   my (@conditions, %synced);
-   my ($done, $numjobs, $total_wait, $pid, $filenames, $file, @stat);
 
    croak ("MNI::Batch::Synchronize : must specify either " .
           "`start' or `finish' to synchronize on")
       unless ($condition =~ /^start|finish$/);
 
-   @conditions = ($condition);
+   return 1 unless $Options{'Execute'};
+
+   my @conditions = ($condition);
    push (@conditions, "fail") if $condition eq "finish";
 
-   $done = 0;
-   $numjobs = scalar (keys %SyncFiles);
+   my $done = 0;
+   my $numjobs = scalar (keys %SyncFiles);
    $periodic_delay = $initial_delay unless defined $periodic_delay;
-
-   return 0 unless $Options{'Execute'};
 
    print "MNI::Batch::Synchronize : starting initial delay ($initial_delay sec)\n";
    sleep $initial_delay;
-   $total_wait = $initial_delay;
+
+   my $total_wait = $initial_delay;
+   my (%synced) = ();
 
    while ($done < $numjobs)
    {
@@ -421,13 +486,14 @@ sub Synchronize
       # for which this is true, increment $done -- then we will stop
       # when $done == $numjobs (ie., the number of jobs recorded in the
       # %$sync hash)
-      
+
+      my( $pid, $filenames );
       while (($pid,$filenames) = each %SyncFiles)
       {
          my $cond;
          foreach $cond (@conditions)
          {
-            $file = $filenames->{$cond};
+	    my $file = $filenames->{$cond};
             if (-e $file)
             {
                print "$file ";
@@ -442,14 +508,14 @@ sub Synchronize
 
       unless ($done == $numjobs)
       {
-         sleep ($periodic_delay);
-         $total_wait += $periodic_delay;
          if (defined $timeout && $total_wait > $timeout)
          {
             warn "MNI::Batch::Synchronize : waited longer than $timeout sec for jobs to finish; ".
                "giving up\n";
             return 0;
          }
+         sleep ($periodic_delay);
+         $total_wait += $periodic_delay;
       }
    }
 
@@ -468,6 +534,13 @@ sub Synchronize
    return @retval;
 }
 
+
+=item QueueCommand( command [,jobname, stdout, stderr, merge] ) 
+
+If there is an open batch job, (created with StartJob) add the command to it.
+Otherwise create a new job to run just this command.
+
+=cut
 
 # ------------------------------ MNI Header ----------------------------------
 #@NAME       : &QueueCommand
@@ -494,9 +567,10 @@ sub QueueCommand
    my $lh = $Options{'LogHandle'};
    $command = shellquote (@$command) if ref $command eq 'ARRAY';
 
-   if ($JobPID || $fakeJobPID)		# pipe open to batch already?
+   if ($JobPID)		# pipe open to batch already?
    {
-      printf $lh " [adding to batch job] %s\n", $command if $Options{'Verbose'};
+      printf $lh " [adding to batch job] %s\n", $command 
+	if $Options{'Verbose'};
 
       return 0 unless $Options{'Execute'};
 
@@ -522,9 +596,6 @@ sub QueueCommand
 if test \$? -ne 0 ; then
   echo "PROGRAM FAILED: $program" >&2
 END
-
-#          $sync_file = &sync_file_name
-#             ("fail", $Options{'SyncDir'}, $JobName{$JobPID}, $ENV{'HOST'}, $JobPID);
          &create_sync_file ("fail", $Options{'SyncDir'}, $JobName{$JobPID},
                             $ENV{'HOST'}, $JobPID, \%SyncFiles);
          print BATCH <<END;
@@ -550,6 +621,15 @@ END
 }
 
 
+=item QueueCommands( commands, jobname, stdout, stderr, merge )
+
+
+Queues multiple commands to the same job.  If a job is already open, they are
+added to it; otherwise, a new job is created for I<all> the commands in
+commands.
+
+=cut
+
 # ------------------------------ MNI Header ----------------------------------
 #@NAME       : &QueueCommands
 #@INPUT      : $commands
@@ -571,14 +651,13 @@ END
 sub QueueCommands
 {
    my ($commands, $jobname, $stdout, $stderr, $merge) = @_;
-   my (@commands, $exclusive);
 
    &set_undefined_option( 'Verbose', 'Verbose');
    &set_undefined_option( 'Execute', 'Execute');
 
    # Remove any empty commands from the command list
 
-   @commands = grep ($_, @commands);
+   my @commands = grep ($_, @$commands);
 
    unless (@commands)
    {
@@ -586,7 +665,8 @@ sub QueueCommands
       return;
    }
 
-   unless ($JobPID || $fakeJobPID)	# no batch job open already?
+   my $exclusive = 0;
+   unless ($JobPID)	# no batch job open already?
    {
       $exclusive = 1;		# this will be ours to close when done
       &StartBatchJob ($jobname, $stdout, $stderr, $merge);
@@ -600,5 +680,22 @@ sub QueueCommands
 
    &FinishJob () if $exclusive;
 }
+
+=back
+
+=head1 AUTHOR
+
+Greg Ward, <greg@bic.mni.mcgill.ca>.  With modifications by Chris Cocosco,
+Steve Robbins, and probably dozens of others.
+
+=head1 COPYRIGHT
+
+Copyright (c) 1997-1999 by Gregory P. Ward, McConnell Brain Imaging Centre,
+Montreal Neurological Institute, McGill University.
+
+This file is part of the MNI Perl Library.  It is free software, and may be
+distributed under the same terms as Perl itself.
+
+=cut
 
 1;
