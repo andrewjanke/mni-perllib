@@ -19,6 +19,7 @@ SOURCE = MNI/Startup.pm\
 	 MNI/MiscUtilities.pm\
 	 MNI/NumericUtilities.pm\
 	 MNI/MincUtilities.pm\
+	 MNI/DataDir.pm\
 	 Getopt/Tabular.pod
 TMPDIRS= MNI Getopt
 
