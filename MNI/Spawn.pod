@@ -65,37 +65,57 @@ Here is a fairly complete list of F<MNI::Spawn>'s features:
 
 =over 4
 
-=item * execution of a single command (the module's I<raison d'etre>)
+=item *
 
-=item * execution through the UCSF Batch system (makes it possible to
-write programs that run either sequentially or in parallel, depending on
-a run-time option)
+execution of a single command (the module's I<raison d'etre>)
 
-=item * representation of commands as a string or list---like with
-Perl's C<system> and C<exec>, the former might mean interpretation by
-the shell, but the latter guarantees no shell involvement
+=item *
 
-=item * can search for programs when executing them, or look them up in
-a list of "known" programs and their locations that is created (with
-your help) before any programs are actually run
+execution through the UCSF Batch system (makes it possible to write
+programs that run either sequentially or in parallel, depending on a
+run-time option)
 
-=item * maintains a list of default arguments for each "known" program
-that can be inserted into the command line when the program is run
+=item *
 
-=item * can print a detailed summary of command execution (user, host,
-date, time, and complete command line), to a file of your choice
-(normally your standard output)
+representation of commands as a string or list---like with Perl's C<system>
+and C<exec>, the former might mean interpretation by the shell, but the
+latter guarantees no shell involvement
 
-=item * redirection of the sub-process' standard output and/or standard
-error to files (separately or together)
+=item *
 
-=item * capture of the sub-process' standard output and/or standard
-error to Perl variables (separately or together) (redirection and
-capturing can be mixed 'n matched at will)
+can search for programs when executing them, or look them up in a list of
+"known" programs and their locations that is created (with your help)
+before any programs are actually run
 
-=item * merging of standard error with standard output
+=item *
 
-=item * customizable response to the child program crashing
+maintains a list of default arguments for each "known" program that can be
+inserted into the command line when the program is run
+
+=item *
+
+can print a detailed summary of command execution (user, host, date, time,
+and complete command line), to a file of your choice (normally your
+standard output)
+
+=item *
+
+redirection of the sub-process' standard output and/or standard error to
+files (separately or together)
+
+=item *
+
+capture of the sub-process' standard output and/or standard error to Perl
+variables (separately or together) (redirection and capturing can be mixed
+'n matched at will)
+
+=item *
+
+merging of standard error with standard output
+
+=item *
+
+customizable response to the child program crashing
 
 =back
 
@@ -104,13 +124,21 @@ add are, in approximate order of how likely I am ever to add them:
 
 =over 4
 
-=item * input redirection
+=item *
 
-=item * background execution
+input redirection
 
-=item * remote execution (through C<rsh>)
+=item *
 
-=item * pipelines
+background execution
+
+=item *
+
+remote execution (through C<rsh>)
+
+=item *
+
+pipelines
 
 =back
 
