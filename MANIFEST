@@ -28,6 +28,7 @@ MNI/MincUtilities.pm
 MNI/Startup.pm
 MNI/Spawn.pm
 MNI/Spawn.pod
+MNI/Tag.pm
 MNI/DataDir.pm.in
 doc/Makefile
 doc/extract_pod

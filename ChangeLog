@@ -1,3 +1,7 @@
+Fri Aug 13 20:12:12 1999  Steve ROBBINS  <stever@bic.mni.mcgill.ca>
+
+	* MNI/Tag.pm: new file.  Manipulate tag files as perl objects.
+
 Thu Aug 12 14:17:14 1999  Steve Robbins  <steve@nyongwa.montreal.qc.ca>
 
 	* MNI/Batch.pm (_batch_optstring): fixed 'shell' option; forgot to
