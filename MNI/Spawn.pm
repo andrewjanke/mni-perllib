@@ -4,14 +4,16 @@
 #              searching, default arguments, verbose command logging, 
 #              interface to UCSF Batch, output redirect/capture, and
 #              error checking).
-#@EXPORT     : UNTOUCHED, REDIRECT, CAPTURE, MERGE
+#@EXPORT     : SetOptions FindPrograms AddDefaultArgs ClearDefaultArgs Spawn
+#              UNTOUCHED, REDIRECT, CAPTURE, MERGE
 #@EXPORT_OK  : 
 #@EXPORT_TAGS: all, const
-#@USES       : 
+#@USES       : Carp, Cwd, 
+#              MNI::FileUtilities, MNI::PathUtilities, MNI::MiscUtilities
 #@REQUIRES   : Exporter
 #@CREATED    : 1997/07/07, Greg Ward (loosely based on JobControl.pm, rev 2.8)
 #@MODIFIED   : 
-#@VERSION    : $Id: Spawn.pm,v 1.4 1997-07-25 02:38:40 greg Exp $
+#@VERSION    : $Id: Spawn.pm,v 1.5 1997-07-25 03:54:47 greg Exp $
 #@COPYRIGHT  : Copyright (c) 1997 by Gregory P. Ward, McConnell Brain Imaging
 #              Centre, Montreal Neurological Institute, McGill University.
 #
@@ -32,12 +34,13 @@ use MNI::MiscUtilities qw(userstamp timestamp shellquote);
 
 require 5.002;
 require Exporter;
-#require AutoLoader;
 @ISA = qw(Exporter);
 @EXPORT_OK = qw();
-%EXPORT_TAGS = (all   => \@EXPORT_OK,
-                const => [qw(UNTOUCHED REDIRECT CAPTURE MERGE)]);
-@EXPORT = @{$EXPORT_TAGS{'const'}};
+%EXPORT_TAGS = (const => [qw(UNTOUCHED REDIRECT CAPTURE MERGE)],
+                subs  => [qw(SetOptions FindPrograms 
+                             AddDefaultArgs ClearDefaultArgs Spawn)]);
+@EXPORT = (@{$EXPORT_TAGS{'const'}}, @{$EXPORT_TAGS{'subs'}});
+$EXPORT_TAGS{all} = [@EXPORT, @EXPORT_OK];
 
 
 sub UNTOUCHED { \1 }
