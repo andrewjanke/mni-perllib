@@ -92,12 +92,13 @@ Thus, the conventional interface will be discussed first, and the bulk of
 the documentation and example code will be in terms of it.  Note that all
 of the subroutines in the conventional interface have corresponding methods
 in the OO interface, and the correspondence is fairly obvious: for
-instance, C<FindPrograms> (subroutine) corresponds to C<find_programs>
-(method).  It's trivial to translate back and forth between the two
-interfaces; for instance, this code (in the conventional interface):
+instance, C<RegisterPrograms> (subroutine) corresponds to
+C<register_programs> (method).  It's trivial to translate back and forth
+between the two interfaces; for instance, this code (in the conventional
+interface):
 
    MNI::Spawn::SetOptions (verbose => 0);
-   FindPrograms ([qw(mincresample mincreshape mincmath)]);
+   RegisterPrograms ([qw(mincresample mincreshape mincmath)]);
    AddDefaultArgs ('mincresample', '-quiet');
    Spawn (['mincresample', $invol, $outvol, @options]);
 
@@ -105,7 +106,7 @@ would, in OO terms, be:
 
    $spawner = new MNI::Spawn (verbose => 0);
      ...
-   $spawner->find_programs ([qw(mincresample mincreshape mincmath)]);
+   $spawner->register_programs ([qw(mincresample mincreshape mincmath)]);
    $spawner->add_default_args ('mincresample', '-quiet]);
    $spawner->spawn (['mincresample', $invol, $outvol, @options]);
 
@@ -136,7 +137,7 @@ F<MNI::Spawn> is the same (hardly surprising given that the conventional
 interface is implemented on top of the OO interface).  Generally
 speaking, every program you write using F<MNI::Spawn> will call the
 C<Spawn> subroutine (or C<spawn> method) several times, and most
-programs will make some use of C<SetOptions>, C<FindPrograms>, and
+programs will make some use of C<SetOptions>, C<RegisterPrograms>, and
 C<AddDefaultArgs>.  
 
 C<Spawn> is the call that actually executes a program; the others merely
@@ -406,7 +407,7 @@ again through sleight-of-hand.
 
 Three-way flag; if it is C<1> then C<Spawn> will print a warning (using
 C<carp>) when you try to run a program you haven't previously told it
-about with C<FindPrograms> (more about this below); if it is C<2>, then
+about with C<RegisterPrograms> (more about this below); if it is C<2>, then
 C<Spawn> will die (using C<croak>) in such a situation.  If it is false,
 C<Spawn> will happily try to execute any program you wish.  Also,
 attempting to add default arguments (with C<AddDefaultArgs>) for unknown
@@ -421,18 +422,18 @@ controlled with the C<search> and C<add_defaults> options.)
 
 =item C<search> (default: true)
 
-Boolean; if true, then C<Spawn> might search a list of directories (see
-the C<search_path> option below) to determine the location of the
-program it's about to execute.  This won't happen if C<Spawn> already
-has an idea of the program's location, either through a previous call to
-C<FindPrograms> (which is how you tell C<Spawn> in advance what programs
-you expect to be running) or if you supply a program name with directory
-components (either absolute or relative).  Note that since searching is
-a sub-task of completion, C<complete> must be true for C<search> to have
-any effect.  Also, don't assume that just because C<Spawn> doesn't
-search a list of directories for your program, nobody will---Perl's
-C<exec> calls either the shell or C<execvp(3)>, which means the PATH
-environment variable will be searched.
+Boolean; if true, then C<Spawn> might search a list of directories (see the
+C<search_path> option below) to determine the location of the program it's
+about to execute.  This won't happen if C<Spawn> already has an idea of the
+program's location, either through a previous call to C<RegisterPrograms>
+(which is how you tell C<Spawn> in advance what programs you expect to be
+running) or if you supply a program name with directory components (either
+absolute or relative).  Note that since searching is a sub-task of
+completion, C<complete> must be true for C<search> to have any effect.
+Also, don't assume that just because C<Spawn> doesn't search a list of
+directories for your program, nobody will---Perl's C<exec> calls either the
+shell or C<execvp(3)>, which means the PATH environment variable will be
+searched.
 
 =item C<add_defaults> (default: true)
 
@@ -444,7 +445,7 @@ C<search>, C<complete> must be true for C<add_defaults> to have any effect.
 
 String or list ref; supplies the list of directories to search when
 searching for programs.  This is passed directly to
-C<MNI::FileUtilities::find_programs>, so the same rules apply as to the
+C<MNI::FileUtilities::register_programs>, so the same rules apply as to the
 PATH parameter to that subroutine: C<search_path> may be a string
 containing a colon-separated list of directories or a reference to a
 list of directories; or it can be undefined, in which case
@@ -453,7 +454,7 @@ C<$ENV{'PATH'}> is used.
 C<search_path> applies both to the implicit search done by C<Spawn> when
 it doesn't have any other information on the whereabouts of a program
 (and C<complete> and C<search> are both true), and to the search
-explicitly requested by calling C<FindPrograms>.
+explicitly requested by calling C<RegisterPrograms>.
 
 =item C<err_action> (default: C<'fatal'>)
 
@@ -526,9 +527,9 @@ method).
 If the program name is "bare" (contains no slashes), then C<Spawn> will
 attempt to resolve it to a full path.  This is first done by looking up the
 bare program name in an internal list of "known" programs (which you create
-using C<FindPrograms>).  (Keeping a list of known programs means C<Spawn>
-can help save you from silly typos as well as cache program locations to
-avoid redundant multiple searches.)
+using C<RegisterPrograms>).  (Keeping a list of known programs means
+C<Spawn> can help save you from silly typos as well as cache program
+locations to avoid redundant multiple searches.)
 
 If the program is not found in the list of known programs, C<Spawn>
 tries a little harder.  First, it might print a warning or even crash
@@ -545,7 +546,7 @@ the C<err_action> option.
 The result of a successful search is I<not> saved anywhere---so
 repeatedly running the same program may result in repeated searches for
 that program (another good reason to set up that "known program" list
-with C<FindPrograms>).
+with C<RegisterPrograms>).
 
 If the C<search> option is false, don't assume that C<Spawn> will just
 run a program in the current directory (if it exists).  C<Spawn> calls
@@ -779,7 +780,7 @@ of the known options, or if you don't supply an even number of arguments.
 See L<"OPTIONS"> for brief descriptions of all the options; complete
 details are scattered throughout the relevant sections of this man page.
 
-=item FindPrograms (PROGRAMS [, PATH])
+=item RegisterPrograms (PROGRAMS [, PATH])
 
 Tells F<MNI::Spawn> about the programs you intend to run during the
 lifetime of your program.  PROGRAMS must be a reference to a list of bare
@@ -791,24 +792,24 @@ option is used (which in turn effectively defaults to C<$ENV{'PATH'}>).
 Each program listed in PROGRAMS is searched for in the directories
 listed in PATH (or C<search_path>, or C<$ENV{'PATH'}>); if any are not
 found, an appropriate error message (e.g. 'Couldn't find program "foo"')
-is printed for each missing program and C<FindPrograms> returns false.
+is printed for each missing program and C<RegisterPrograms> returns false.
 In the event of such a failure, any successful search results are I<not>
 kept---this should almost always be treated as a fatal error, so
 F<MNI::Spawn> doesn't expect that you'll continue marching blithely on.
-Only if all programs listed in PROGRAMS are found does C<FindPrograms>
+Only if all programs listed in PROGRAMS are found does C<RegisterPrograms>
 store the full paths for later use by C<Spawn> (in the "command
 completion" phase); it then returns true.  Thus, this is usually called
 like
 
-   FindPrograms ([qw(ls rm cat cp)]) || exit 1;
+   RegisterPrograms ([qw(ls rm cat cp)]) || exit 1;
 
-where we don't print an error message because C<FindPrograms> takes care
+where we don't print an error message because C<RegisterPrograms> takes care
 of it for us.
 
-C<FindPrograms> can be called any number of times in your program---it
+C<RegisterPrograms> can be called any number of times in your program---it
 always adds to the existing list of "known programs."
 
-See also C<find_programs>, C<find_program>, and C<search_directories> in
+See also C<register_programs>, C<find_program>, and C<search_directories> in
 L<MNI::FileUtilities>.
 
 =item AddDefaultArgs (PROGRAMS, ARGS [, WHERE])
@@ -887,9 +888,9 @@ Same as C<SetOptions> subroutine, except called as a method:
 
    $spawner->set_options (option, value, ...);
 
-=item find_programs (PROGRAMS [, PATH])
+=item register_programs (PROGRAMS [, PATH])
 
-Same as C<FindPrograms>, except called as a method.
+Same as C<RegisterPrograms>, except called as a method.
 
 =item add_default_args (PROGRAMS, ARGS [, WHERE])
 

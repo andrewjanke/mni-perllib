@@ -4,16 +4,17 @@
 #              searching, default arguments, verbose command logging, 
 #              interface to UCSF Batch, output redirect/capture, and
 #              error checking).
-#@EXPORT     : SetOptions FindPrograms AddDefaultArgs ClearDefaultArgs Spawn
+#@EXPORT     : SetOptions, RegisterPrograms
+#              AddDefaultArgs, ClearDefaultArgs, Spawn,
 #              UNTOUCHED, REDIRECT, CAPTURE, MERGE
 #@EXPORT_OK  : 
-#@EXPORT_TAGS: all, const
+#@EXPORT_TAGS: all, const, subs
 #@USES       : Carp, Cwd, 
 #              MNI::FileUtilities, MNI::PathUtilities, MNI::MiscUtilities
 #@REQUIRES   : Exporter
 #@CREATED    : 1997/07/07, Greg Ward (loosely based on JobControl.pm, rev 2.8)
 #@MODIFIED   : 
-#@VERSION    : $Id: Spawn.pm,v 1.6 1997-08-08 14:56:04 greg Exp $
+#@VERSION    : $Id: Spawn.pm,v 1.7 1997-08-13 14:59:29 greg Exp $
 #@COPYRIGHT  : Copyright (c) 1997 by Gregory P. Ward, McConnell Brain Imaging
 #              Centre, Montreal Neurological Institute, McGill University.
 #
@@ -28,7 +29,7 @@ use strict;
 use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS);
 use Carp;
 use Cwd;
-use MNI::FileUtilities ();
+use MNI::FileUtilities qw(:search);
 use MNI::PathUtilities qw(split_path);
 use MNI::MiscUtilities qw(userstamp timestamp shellquote);
 
@@ -37,7 +38,7 @@ require Exporter;
 @ISA = qw(Exporter);
 @EXPORT_OK = qw();
 %EXPORT_TAGS = (const => [qw(UNTOUCHED REDIRECT CAPTURE MERGE)],
-                subs  => [qw(SetOptions FindPrograms 
+                subs  => [qw(SetOptions RegisterPrograms 
                              AddDefaultArgs ClearDefaultArgs Spawn)]);
 @EXPORT = (@{$EXPORT_TAGS{'const'}}, @{$EXPORT_TAGS{'subs'}});
 $EXPORT_TAGS{all} = [@EXPORT, @EXPORT_OK];
@@ -75,7 +76,7 @@ my %DefaultOptions =
 #   new
 #   copy
 #   set_options
-#   find_programs
+#   register_programs
 #   add_default_args
 #   clear_default_args
 #   spawn
@@ -153,7 +154,7 @@ sub set_options
 
 
 # ------------------------------ MNI Header ----------------------------------
-#@NAME       : find_programs
+#@NAME       : register_programs
 #@INPUT      : 
 #@OUTPUT     : 
 #@RETURNS    : 
@@ -161,16 +162,16 @@ sub set_options
 #@CREATED    : 1997/07/07, GPW, from FindPrograms in JobControl.pm
 #@MODIFIED   : 
 #-----------------------------------------------------------------------------
-sub find_programs
+sub register_programs
 {
    my ($self, $programs, $path) = shift;
 
-   croak 'find_programs: $programs must be an array reference'
+   croak 'register_programs: $programs must be an array reference'
       unless ref $programs eq 'ARRAY';
-   croak 'find_programs: if supplied, $path must be a scalar or list reference'
+   croak 'register_programs: if supplied, $path must be a scalar or list reference'
       unless (ref $path eq 'ARRAY' || ! ref $path);
 
-   my @fullpaths = MNI::FileUtilities::find_programs 
+   my @fullpaths = find_programs 
       ($programs, $path || $self->{search_path});
    if (@fullpaths)              # all found successfully?
    {
@@ -461,8 +462,8 @@ sub set_undefined_option
 #@DESCRIPTION: Makes sure that a program we wish to execute actually exists.
 #              How this is done depends on how the program name is specified;
 #              if it is just a filename (no slashes), then we first look
-#              in the %Programs hash to see if it was registered via
-#              FindProgram; if not, we (optionally) complain and try to
+#              in the 'programs' hash to see if it was registered via
+#              register_programs; if not, we (optionally) complain and try to
 #              find out ourselves via an explicit search.  If this fails,
 #              we fail via &check_status (meaning we might just
 #              return 0, or completely bomb out, or whatever the caller
@@ -489,12 +490,11 @@ sub check_program
    # If $program was supplied as a bare filename, then we poke around a bit
    # to find it.  First try the `programs' hash; if it's not found there,
    # then we issue a warning (if the `strict' flag is set) and try to find
-   # it ourselves with &MNI::FileUtilities::find_program.  If this also
-   # fails, then we call &check_status with an artificial failure
-   # status (the same status that Perl sets if system() fails because the
-   # program doesn't exist) to provoke the appropriate failure action.
-   # It's ok to do this without printing "$program not found" because
-   # MNI::FileUtilities::find_program does this for us.
+   # it ourselves with &find_program.  If this also fails, then we call
+   # &check_status with an artificial failure status (the same status that
+   # Perl sets if system() fails because the program doesn't exist) to
+   # provoke the appropriate failure action.  It's ok to do this without
+   # printing "$program not found" because find_program does this for us.
 
    if ($program !~ m|/|)      # just a name, no directories at all
    {
@@ -506,8 +506,7 @@ sub check_program
          carp ("spawn: warning: program \"$program\" not registered")
             if ($self->{strict} == 1);
 
-         $fullpath = MNI::FileUtilities::find_program
-            ($program, $self->{search_path});
+         $fullpath = find_program ($program, $self->{search_path});
          if (! defined $fullpath)
          {
             return $self->check_status (255 << 8, $program, $command);
@@ -1181,7 +1180,7 @@ sub spawn_redirect
 my $default_spawner = new MNI::Spawn;
 
 sub SetOptions        { $default_spawner->set_options (@_); }
-sub FindPrograms      { $default_spawner->find_programs (@_); }
+sub RegisterPrograms  { $default_spawner->register_programs (@_); }
 sub AddDefaultArgs    { $default_spawner->add_default_args (@_); }
 sub ClearDefaultArgs  { $default_spawner->clear_default_args (@_); }
 sub Spawn             { $default_spawner->spawn (@_); }
