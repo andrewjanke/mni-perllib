@@ -8,7 +8,7 @@
 #@REQUIRES   : Exporter
 #@CREATED    : 1997/07/25, Greg Ward (from old Startup.pm, rev. 1.23)
 #@MODIFIED   : 
-#@VERSION    : $Id: Startup.pm,v 1.5 1997-08-27 14:14:32 greg Exp $
+#@VERSION    : $Id: Startup.pm,v 1.6 1997-09-11 19:05:16 greg Exp $
 #@COPYRIGHT  : Copyright (c) 1997 by Gregory P. Ward, McConnell Brain Imaging
 #              Centre, Montreal Neurological Institute, McGill University.
 #
@@ -100,11 +100,13 @@ table for use with the F<Getopt::Tabular> module.
 
 =item C<cputimes>
 
-Keep track of elapsed CPU time and print it out at exit time.
+Keep track of elapsed CPU time and print it out at exit time (depending on
+certain other conditions).
 
 =item C<cleanup>
 
-Clean up a temporary directory at exit time.
+Clean up a temporary directory at exit time (depending on certain other
+conditions).
 
 =item C<sig>
 
@@ -362,8 +364,8 @@ corresponding to the six variables described above.
 F<MNI::Spawn> can keep track of the CPU time used by your program and any
 child processes, and by the system on behalf of them.  If the C<cputimes>
 option is true, it will do just this and print out the CPU times used on
-program shutdown---but only if the program is exiting successfully
-(i.e. with a zero exit status).
+program shutdown---but only if the $Verbose global is also true and the
+program is exiting successfully (i.e. with a zero exit status).
 
 =head1 SIGNAL HANDLING
 
@@ -537,7 +539,11 @@ sub cleanup
 {
    my ($crash) = @_;
 
-   if ($options{cputimes} && !$crash) # only print times on successful exit
+   # Only print times if $Verbose is true (end-user control), 'cputimes'
+   # option is true (programmer control), and we're not crashing (just
+   # dumb luck)
+
+   if ($Verbose && $options{cputimes} && !$crash)
    {
       my (@stop_times, @elapsed, $i, $user, $system);
 
