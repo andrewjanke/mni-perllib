@@ -25,6 +25,7 @@ use Exporter;
 use Carp;
 use MNI::MiscUtilities qw( timestamp userstamp shellquote ); 
 
+
 @ISA = qw(Exporter);
 @EXPORT_OK = qw(StartJob FinishJob Synchronize 
 		QueueCommand QueueCommands);
@@ -39,7 +40,7 @@ MNI::Batch - execute commands via the UCSF Batch Queuing System
 
   use MNI::Batch qw(:all);
 
-  MNI::Batch::SetOptions( queue => 'long', synchronize = 'finish' );
+  MNI::Batch::SetOptions( queue => 'long', synchronize => 'finish' );
 
   StartJob( 'Make List', stdout => 'logfile', merge_stderr => 1 );
   QueueCommand( 'ls -lR' );
@@ -242,7 +243,7 @@ my $JobPID = 0;
 #
 my %JobName = ();
 
-# Map JobPID --> filename hash.  The hash maps a condition
+# Map JobPID --> filename hash.  The filename hash maps a condition
 # (one of 'start', 'finish', or 'fail') to the associated sync
 # filename.
 #
@@ -256,6 +257,34 @@ sub _syncfile_name {
     my( $pid, $cond ) = @_;
     return $SyncFiles{$pid}{$cond};
 }
+
+# Computes the name of a synchronization file for the given
+# condition, stores it in %SyncFiles hash, and emits shell code
+# to create the file.
+#
+# Returns: the sync file name.
+#
+sub create_sync_file
+{
+   my ($condition, $dir, $job_name, $host, $job_pid) = @_;
+
+   # job name is not always defined, but the rest ought to be(?)
+   $job_name = '' unless defined($job_name);
+
+   my $file = sprintf ("%s-%s-%d-%s", 
+		       $job_name, $host, $job_pid, $condition);
+
+   # map all non-alphanumeric stuff to underscore.
+   $file =~ s/[^a-zA-Z0-9:\,-]/_/g;
+   $file = "$dir/$file";
+
+   print BATCH <<END;
+if test ! -d $dir; then mkdir -p $dir || exit 1; fi
+touch $file || exit 1
+END
+   $SyncFiles{$job_pid}{$condition} = $file;
+}
+
 
 
 # Input: <nothing>
@@ -356,24 +385,6 @@ sub set_undefined_option
         "for option $option"
       unless defined ${ $package . '::' . $varname };
    $Options{$option} = ${ $package . '::' . $varname }
-}
-
-
-sub create_sync_file
-{
-   my ($condition, $dir, $job_name, $host, $job_pid, $hash) = @_;
-
-   # FIXME: watch out for illegal characters in $job_name, etc.
-   #
-   $job_name = '' unless defined($job_name);
-
-   my $file = sprintf ("%s/%s_%s-%d.%s", 
-		       $dir, $job_name, $host, $job_pid, $condition);
-   print BATCH <<END;
-if test ! -d $dir; then mkdir -p $dir || exit 1; fi
-touch $file || exit 1
-END
-   $hash->{$job_pid}{$condition} = $file;
 }
 
 
@@ -513,8 +524,8 @@ END
     if ($Options{'synchronize'} eq 'start' || $Options{'synchronize'} eq 'both')
     {
 	&create_sync_file ("start", $Options{'syncdir'}, $Options{'job_name'},
-			   $ENV{'HOST'}, $JobPID, \%SyncFiles);
-	$start_syncfile = $SyncFiles{$JobPID}{'start'}
+			   $ENV{'HOST'}, $JobPID);
+	$start_syncfile = _syncfile_name($JobPID, 'start');
     }
 
     return $start_syncfile;
@@ -569,8 +580,8 @@ sub FinishJob
        $Options{'synchronize'} eq "both")
    {
       &create_sync_file ("finish", $Options{'syncdir'}, $JobName{$JobPID},
-                          $ENV{'HOST'}, $JobPID, \%SyncFiles);
-      $finish_syncfile = $SyncFiles{$JobPID}{'finish'};
+                          $ENV{'HOST'}, $JobPID);
+      $finish_syncfile = _syncfile_name($JobPID, 'finish');
    }
 
    if ($Options{'export_tmpdir'} && $Options{'nuke_tmpdir'})
@@ -592,6 +603,7 @@ END
 
 
 =item Synchronize( onwhat, delay )
+
 =item Synchronize( onwhat, initial_delay, periodic_delay [,timeout] )
 
 Wait until either all pending jobs start, or all pending jobs finish
@@ -721,11 +733,7 @@ sub Synchronize
 
 =item QueueCommand( command [, options] )
 
-If there is an open batch job, (created with StartJob) add the command to it.
-Otherwise create a new job to run just this command.
-
-If the I<synchronize> option is set to "finish" or "both", the filename for
-the finish synchronizing file is returned.
+This is equivalent to C<QueueCommands( [ command ], options )>.
 
 =cut
 
@@ -739,13 +747,23 @@ sub QueueCommand
 
 =item QueueCommands( commands [,options] )
 
+Queues multiple commands to the same job.  If a job is already open, the given
+commands are simply added to it.  If no job is currently open, a new job is
+created, the commands are added, and the job is closed.
 
-Queues multiple commands to the same job.  If a job is already open, they are
-added to it; otherwise, a new job is created for I<all> the commands in
-commands.
+In an array context, a list of two filenames is returned: C<(fail,finish)>.
+When the I<check_status> option is turned on, a file is created if B<any> of
+the commands fail.  The name of this file is returned as the first element of
+the array.  If I<check_status> is not enabled, a null string is returned.
+When the I<synchronize> option is set to "finish" or "both", then a file is
+created after the shell commands complete.  The name of this finish file is
+returned as the second element of the array, but only if C<QueueCommands>
+calls C<FinishJob>; i.e. only if there was no job currently active when
+C<QueueCommands> was called.  Otherwise, the empty string is returned.
 
-If the I<synchronize> option is set to "finish" or "both", the filename for
-the finish synchronizing file is returned.
+In a scalar context, only the filename of the I<finish> synchronizing file (if
+any) is returned.  This is for backwards-compatibility.  New code should expect
+an array.
 
 =cut
 
@@ -777,21 +795,23 @@ sub QueueCommands
 	  if (@commands > 1) and ($stdout or $stderr or $merge);
     }
 
-    map( _queue_one_command($_, $stdout, $stderr, $merge), @commands );
+    my @ff = map( _queue_one_command($_, $stdout, $stderr, $merge), @commands );
+    my $finish_file = ( $finish_job ? FinishJob() : '' );
 
-    return FinishJob() if $finish_job;
+    return wantarray ? ($ff[0], $finish_file) : $finish_file;
 }
 
 
 # Input: command, stder, stdout, merge
 # Precondition: a job is active
+# Output: fail syncfile name, if any.
 #
 sub _queue_one_command
 {
     my( $command, $stdout, $stderr, $merge ) = @_;
     $command = shellquote (@$command) if ref $command eq 'ARRAY';
     my ($program) = $command =~ /^(\S+)/;
-    
+
     my $lh = $Options{'loghandle'};
 
     printf $lh " [adding to batch job] %s\n", $command 
@@ -814,18 +834,21 @@ sub _queue_one_command
     }
     printf BATCH "%s\n", substr ($command, $i);
 
+    my $fail_file = '';
     if ($Options{'check_status'}) {
 	print BATCH <<END;
 if test \$? -ne 0 ; then
   echo "PROGRAM FAILED: $program" >&2
 END
 	&create_sync_file ("fail", $Options{'syncdir'}, $JobName{$JobPID},
-			   $ENV{'HOST'}, $JobPID, \%SyncFiles);
+			   $ENV{'HOST'}, $JobPID);
+	$fail_file = _syncfile_name($JobPID, 'fail');
 	print BATCH <<END;
   exit 1
 fi
 END
     }
+    return $fail_file;
 }
 
 

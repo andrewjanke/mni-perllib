@@ -22,6 +22,7 @@ MNI::Batch::SetOptions( queue => 'short',
 			merge_stderr => 0,
 		      );
 
+MNI::Spawn::RegisterPrograms( [ qw(date echo hostname ls) ] );
 
 
 # 0 tests
@@ -132,7 +133,7 @@ test( ! -f $finishfile );
 # short queue, even though the syncfile existed.  After submitting another job
 # to the queue, the first job finished promptly!
 # Does this help?  
-QueueCommand( 'echo dummy command' );
+QueueCommand( 'echo dummy command', synchronize => 'none' );
 
 wait_for_files( $finishfile );
 `/bin/rm -rf $syncdir`; die if $?

@@ -1,3 +1,47 @@
+Wed Oct 27 18:38:15 1999  Steve ROBBINS  <stever@bic.mni.mcgill.ca>
+
+	* MNI/Batch.pm (create_sync_file): use underscore rather than
+ 	period to sanitize names; files with leading periods are a
+ 	nuisance to find using 'ls'.
+
+Tue Oct 26 13:24:13 1999  Steve ROBBINS  <stever@bic.mni.mcgill.ca>
+
+	* MNI/Tag.pm (save): don't use self->{_comments} if it
+	isn't defined.
+
+	* MNI/Batch.pm (create_sync_file): sanitize sync file names by
+	replacing any non-safe character with a period.
+
+Fri Oct 22 17:47:24 1999  Steve ROBBINS  <stever@bic.mni.mcgill.ca>
+
+	* t/batch.t (test): register programs spawned during the tests.
+
+	* MNI/Batch.pm (QueueCommands): now returns *both* the fail file
+	and the finish file names.  For backwards compatibilty, only the 
+	finish file is returned in scalar context.
+
+Thu Oct 14 18:34:16 1999  Steve ROBBINS  <stever@bic.mni.mcgill.ca>
+
+	* MNI/Tag.pm: add code to update tag coordinates and write tags to
+ 	file.  The tag code still ignores comments and "auxiliary" data.
+
+	* MNI/Tag.pm(new): for creating a new tag file; this is a change
+ 	in constructor semantics!
+
+	* MNI/Tag.pm(open): for opening existing tag file; this is what
+	the old "new" constructor did.
+
+	* t/example1.tag:
+	* t/tag.t: new files.  Regression testing for MNI::Tag.
+
+	* preptest:
+	* preptest.sh:
+	* rlog.out: removed junk files.
+
+Tue Oct 12 12:40:48 1999  Steve ROBBINS  <stever@bic.mni.mcgill.ca>
+
+	* MNI/Batch.pm: typos in documentation.
+
 Fri Aug 13 20:12:12 1999  Steve ROBBINS  <stever@bic.mni.mcgill.ca>
 
 	* MNI/Tag.pm: new file.  Manipulate tag files as perl objects.
