@@ -252,6 +252,7 @@ sub find_tag {
 #
 # CAVEATs: 
 #   - coordinates different by less than 0.01mm are considered equal
+#   - if several tags have equal coordinates, the last one of 'em is returned
 #   - only works fast if the tagset was read from disk and never modified
 #     (i.e. if ! _dirty )
 #
