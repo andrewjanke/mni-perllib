@@ -5,17 +5,18 @@
 #                 split_path
 #                 replace_dir
 #                 replace_ext
-#@EXPORT     : normalize_dirs
+#@EXPORT     : 
+#@EXPORT_OK  : normalize_dirs
 #              split_path
-#@EXPORT_OK  : replace_dir
+#              replace_dir
 #              replace_ext
 #              merge_paths
-#@EXPORT_TAGS: 
+#@EXPORT_TAGS: all
 #@USES       : 
 #@REQUIRES   : Exporter
 #@CREATED    : 1997/05/13, Greg Ward (from path_utilities.pl, revision 1.10)
 #@MODIFIED   : 
-#@VERSION    : $Id: PathUtilities.pm,v 1.1 1997-05-29 22:24:06 greg Exp $
+#@VERSION    : $Id: PathUtilities.pm,v 1.2 1997-05-29 22:30:41 greg Exp $
 #@COPYRIGHT  : Copyright (c) 1997 by Gregory P. Ward, McConnell Brain Imaging
 #              Centre, Montreal Neurological Institute, McGill University.
 #
@@ -27,7 +28,7 @@
 package MNI::PathUtilities;
 
 use strict;
-use vars qw(@ISA @EXPORT @EXPORT_OK);
+use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS);
 
 # I require 5.004 because this module interacts with Perl 5.002 in 
 # a weird way -- it compiles and runs the module successfully, and
@@ -38,11 +39,13 @@ require 5.004;
 require Exporter;
 
 @ISA = qw(Exporter);
-@EXPORT    = qw(normalize_dirs
-                split_path);
-@EXPORT_OK = qw(replace_dir 
+@EXPORT = ();
+@EXPORT_OK = qw(normalize_dirs
+                split_path
+                replace_dir 
                 replace_ext
                 merge_paths);
+%EXPORT_TAGS = (all => [@EXPORT_OK]);
 
 
 =head1 NAME
@@ -51,7 +54,7 @@ MNI::PathUtilities - recognize, parse, and tweak POSIX file and path names
 
 =head1 SYNOPSIS
 
-   use MNI::PathUtilities;              # import normalize_dirs and split_path
+   use MNI::PathUtilities qw(:all);
 
    normalize_dirs ($dir1, $dir2, ...);
 
@@ -60,11 +63,6 @@ MNI::PathUtilities - recognize, parse, and tweak POSIX file and path names
    ($dir, $base, $last_ext) = split_path ($path, 'last');
 
    ($dir, $base) = split_path ($path, 'none');
-
-
-   use MNI::PathUtilities qw(replace_dir
-                             replace_ext
-                             merge_paths);
 
    @files = replace_dir ($newdir, @files);
 
@@ -104,6 +102,17 @@ way, so the only possible source of errors is if you pass in strings that
 are wildly different from what is expected of Unix/POSIX filenames.  Since
 Unix filenames can be pretty much anything until you actually plant them in
 a real filesystem, this is not detected.
+
+=head1 EXPORTS
+
+By default, C<MNI::PathUtilities> exports no symbols.  You can import in
+the usual one-name-at-a-time way like this:
+
+   use MNI::PathUtilities qw(normalize_dirs split_path);
+
+or you can import everything using the C<all> export tag:
+
+   use MNI::PathUtilities qw(:all);
 
 =head1 SUBROUTINES
 
