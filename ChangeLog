@@ -1,3 +1,6 @@
+2007-09-14  Claude Lepage  <claude@bic.mni.mcgill.ca>
+	* fixed get_dimension_order to report proper dimension order with minc2
+
 2001-07-11  Chris COCOSCO  <crisco@luciana.bic.mni.mcgill.ca>
 
 	* MNI/TagPoint.pm (new) : weight, structure_id, structure_id

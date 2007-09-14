@@ -12,7 +12,7 @@
 #@REQUIRES   : Exporter
 #@CREATED    : 1997/08/07, Greg Ward (from minc_utilities.pl, revision 1.16)
 #@MODIFIED   : 
-#@VERSION    : $Id: MincUtilities.pm,v 1.8 1997-10-03 13:35:25 greg Rel $
+#@VERSION    : $Id: MincUtilities.pm,v 1.9 2007-09-14 19:03:40 claude Exp $
 #@COPYRIGHT  : Copyright (c) 1997 by Gregory P. Ward, McConnell Brain Imaging
 #              Centre, Montreal Neurological Institute, McGill University.
 #
@@ -779,7 +779,10 @@ sub get_dimension_order
       my $dimlist;
       if ($Execute)
       {
-         $Spawner->spawn (['mincinfo', '-dimnames', $volume],
+         ### this fails in minc2.
+         ###  $Spawner->spawn (['mincinfo', '-dimnames', $volume],
+         ### this will work in minc2.
+         $Spawner->spawn (['mincinfo', '-vardims', 'image', $volume],
                           stdout => \$dimlist);
          chop $dimlist;
          @dimlist = split (/\s+/, $dimlist);
