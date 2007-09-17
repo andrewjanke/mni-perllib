@@ -42,3 +42,4 @@ doc/extract_pod
 doc/make_latex
 doc/mni_perllib.tex
 doc/my_pod2latex
+META.yml                                 Module meta-data (added by MakeMaker)

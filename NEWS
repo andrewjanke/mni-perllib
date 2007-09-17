@@ -1,3 +1,8 @@
+Changes in Release 0.08
+
+* fixed get_dimension_order to report proper dimension order with minc2
+
+
 Changes in Release 0.07
 
 * MNI::Batch::JobStatus() will attempt to divine status of

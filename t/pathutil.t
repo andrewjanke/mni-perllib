@@ -1,4 +1,6 @@
-#!/usr/local/bin/perl5 -w
+#! /usr/bin/env perl
+
+use warnings "all";
 
 use MNI::PathUtilities qw(normalize_dirs 
                           split_path 

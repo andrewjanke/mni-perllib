@@ -1,4 +1,6 @@
-#!/usr/local/bin/perl5 -w
+#! /usr/bin/env perl
+
+use warnings "all";
 
 # TODO (tests to add for recently found-and-fixed bugs):
 # 

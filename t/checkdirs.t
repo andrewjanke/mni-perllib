@@ -1,4 +1,6 @@
-#!/usr/local/bin/perl5 -w
+#! /usr/bin/env perl
+
+use warnings "all";
 
 # test program for the following routines from MNI::FileUtilities:
 #   check_output_dirs

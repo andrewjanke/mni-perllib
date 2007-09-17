@@ -1,4 +1,6 @@
-#!/usr/local/bin/perl5 -w
+#! /usr/bin/env perl
+
+use warnings "all";
 
 require "t/compare.pl";
 require "t/fork_test.pl";
