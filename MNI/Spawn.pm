@@ -2,8 +2,7 @@
 #@NAME       : MNI::Spawn
 #@DESCRIPTION: All-singing, all-dancing program runner (includes path 
 #              searching, default arguments, verbose command logging, 
-#              interface to UCSF Batch, output redirect/capture, and
-#              error checking).
+#              output redirect/capture, and error checking).
 #@EXPORT     : SetOptions, RegisterPrograms
 #              AddDefaultArgs, ClearDefaultArgs, Spawn,
 #              UNTOUCHED, REDIRECT, CAPTURE, MERGE
@@ -62,9 +61,7 @@ my %DefaultOptions =
     search       => 1,                  # should we search?
     add_defaults => 1,                  # should we add default arguments?
     search_path  => undef,              # list of directories to search
-#   merge_stderr => REDIRECT,           # when to automatically merge stderr
     err_action   => 'fatal',            # what to do when a command fails
-    batch        => 0,                  # submit commands to batch system?
     clobber      => 0,                  # overwrite output files (not append)
     loghandle    => \*STDOUT,           # filehandle to write commands to
     notify       => $ENV{'USER'},       # should &Obituary actually send mail?
@@ -372,53 +369,6 @@ sub spawn
    if (!defined $stderr && $stdout_mode == REDIRECT) 
    {
       $stderr_mode = MERGE;
-   }
-
-   # If we're in `batch' mode, pass this one off to the batch system
-
-   if ($self->{batch})
-   {
-       croak "spawn: can't capture stdout or stderr when running through batch"
-	   if ($stdout_mode == CAPTURE || $stderr_mode == CAPTURE);
-
-       if( $stdout_mode == REDIRECT && $stdout =~ /^\s*>/ ||
-	   $stderr_mode == REDIRECT && $stderr =~ /^\s*>/    ) {
-
-	   carp <<_END_
-Spawn: Redirection filenames prefixed by \'>\' or \'>>\' are ignored when 
-running through batch!
-The action taken will be \'append\' if no Batch Job is currently
-opened or \'clobber (overwrite)\' if you already have opened
-a job (by means of Batch::StartJob() ).
-
-_END_
-       }
-
-       # batch doesn't like redirection filenames prefixed by ">>" or ">"
-       if( $stdout_mode == REDIRECT) {
-	   $stdout =~ s/^\s*>+\s*//;
-       }
-       if( $stderr_mode == REDIRECT) {
-	   $stderr =~ s/^\s*>+\s*//;
-       }
-
-       # [CC] inspired by &JobControl::Spawn ...
-       #
-       ################################################################
-       # TO DO: thoroughly test all the possible combinations of
-       #        values and modes for $stdout & $stderr; refer to
-       #        &output_mode, default (initial) values, etc. and 
-       #        to MNI/Batch.pm (to see how different values are used)
-       #        [CC:98/11/06]
-       ################################################################
-       #
-       croak "Batch package not loaded -- you must do \"use MNI::Batch;\""
-	   if (! defined &MNI::Batch::QueueCommand);
-       &MNI::Batch::QueueCommand( $command, 
-				  stdout => $stdout, 
-				  stderr => $stderr, 
-				  merge_stderr => ($stderr_mode == MERGE) );
-       return 0;
    }
 
    # Figure out how to open files ('>' to overwrite or '>>' to append), and

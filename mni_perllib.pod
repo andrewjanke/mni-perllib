@@ -6,14 +6,12 @@ mni_perllib - The MNI Perl Library
 
    use MNI::Startup;
    use MNI::Spawn
-   use MNI::Batch;
 
    use MNI::MiscUtilities;
    use MNI::FileUtilities;
    use MNI::PathUtilities;
    use MNI::NumericUtilities;
 
-   use MNI::NetCDF;                  # not yet!
    use MNI::MINC;
    use MNI::MINC::Utility;
 
@@ -61,7 +59,7 @@ It will eventually be available online via the World-Wide Web.
 
 =head1 AUTHOR
 
-Greg Ward, greg@bic.mni.mcgill.ca.
+Greg Ward
 
 =head1 COPYRIGHT
 

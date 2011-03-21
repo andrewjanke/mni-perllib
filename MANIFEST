@@ -1,12 +1,8 @@
 MANIFEST
 README
-CHANGES
 Makefile.PL
 MNI.pm
 mni_perllib.pod
-t/batch-0.t
-t/batch-1.t
-t/batch-2.t
 t/checkdirs.t
 t/checkfiles.t
 t/datadir.t
@@ -25,7 +21,6 @@ t/compare.pl
 t/testvol.mnc
 t/datadir.t.in
 t/toy_ls.in
-MNI/Batch.pm
 MNI/FileUtilities.pm
 MNI/MiscUtilities.pm
 MNI/PathUtilities.pm
@@ -38,8 +33,6 @@ MNI/TagPoint.pm
 MNI/TagSet.pm
 MNI/DataDir.pm.in
 doc/Makefile
-doc/extract_pod
-doc/make_latex
 doc/mni_perllib.tex
 doc/my_pod2latex
 META.yml                                 Module meta-data (added by MakeMaker)

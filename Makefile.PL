@@ -13,7 +13,7 @@ use strict;
 use ExtUtils::MakeMaker;
 
 my %subs = 
-   (DEFAULT_DATA_DIR      => '/usr/local/mni/data');
+   (DEFAULT_DATA_DIR      => '/usr/local/bic/share/mni-models');
 
 # $ExtUtils::MakeMaker::Verbose = 1;
 

@@ -1,387 +1,304 @@
+
+2011-03-21  Andrew L Janke <a.janke@gmail.com
+   * Shifted from cvs to git
+   * Clean up off documentation
+   * Removed Batch.pm as it was causing more problems than it's worth
+      and with the shift to neuro.debian.net it's something that we
+      just dont want
+   * Removing anything to do with batch processing from Spawn.pm
+
 2007-09-14  Claude Lepage  <claude@bic.mni.mcgill.ca>
-	* fixed get_dimension_order to report proper dimension order with minc2
+   * fixed get_dimension_order to report proper dimension order with minc2
 
 2001-07-11  Chris COCOSCO  <crisco@luciana.bic.mni.mcgill.ca>
-
-	* MNI/TagPoint.pm (new) : weight, structure_id, structure_id
-	now initialized by default to 'undef' (makes more sense this
-	way...)
+   * MNI/TagPoint.pm (new) : weight, structure_id, structure_id
+      now initialized by default to 'undef' (makes more sense this
+      way...)
 
 2001-07-04  Chris COCOSCO  <crisco@feeble.bic.mni.mcgill.ca>
-
-	* MNI/TagSet.pm (load) : fixed input parsing to match the tag
-	file format as defined by the volume_io documentation
-
-	* MNI/TagPoint.pm (to_string) : fixed output to match what
-	volume_io is doing
-
-	* MNI/TagSet.pm (find_tag): new function
-
-	* MNI/TagSet.pm (fast_find_tag): new function
+   * MNI/TagSet.pm (load) : fixed input parsing to match the tag
+      file format as defined by the volume_io documentation
+   * MNI/TagPoint.pm (to_string) : fixed output to match what
+      volume_io is doing
+   * MNI/TagSet.pm (find_tag): new function
+   * MNI/TagSet.pm (fast_find_tag): new function
 
 2001-06-11  Steve M. Robbins  <steve@nyongwa.montreal.qc.ca>
-
-	* MNI/Batch.pm (JobStatus): Set verbose and execute options for
-	the spawner.  Cache "baq" output for 60 seconds to avoid invoking
-	this command too often (it is slow).
+   * MNI/Batch.pm (JobStatus): Set verbose and execute options for
+      the spawner.  Cache "baq" output for 60 seconds to avoid invoking
+      this command too often (it is slow).
 
 2001-06-11  Steve M. Robbins  <steve@nyongwa.montreal.qc.ca>
-
-	* MNI/Batch.pm (_emit_syncfile_shellcode): Use "touch" and "mv"
-	to create syncfile; avoids problems if "touch" wants to examine
-	the file after creating it (SGI does this).  Thanks to Chris
-	for uncovering this.
+   * MNI/Batch.pm (_emit_syncfile_shellcode): Use "touch" and "mv"
+      to create syncfile; avoids problems if "touch" wants to examine
+      the file after creating it (SGI does this).  Thanks to Chris
+      for uncovering this.
 
 2001-06-09  Chris Cocosco  <crisco@bic.mni.mcgill.ca>
-
-	* MNI/Spawn.pm (set_undefined_option): also try main::$varname if
-	the calling package doesn't define/export $varname (bugfix for
-	MNI/Batch.pm::JobStatus)
+   * MNI/Spawn.pm (set_undefined_option): also try main::$varname if
+      the calling package doesn't define/export $varname (bugfix for
+      MNI/Batch.pm::JobStatus)
 
 2001-02-26  Steve M. Robbins  <steve@nyongwa.montreal.qc.ca>
-
-	* MNI/Batch.pm (GetJobid): New.  Returns ID of currently-open job.
-
-	* MNI.pm: Set VERSION to 0.07.
-
-	* MNI/Batch.pm (JobStatus): New.  Return status of job, as
-	determined by "baq".
+   * MNI/Batch.pm (GetJobid): New.  Returns ID of currently-open job.
+   * MNI.pm: Set VERSION to 0.07.
+   * MNI/Batch.pm (JobStatus): New.  Return status of job, as
+      determined by "baq".
 
 2000-09-22  Steve ROBBINS  <stever@bic.mni.mcgill.ca>
-
-	* MNI/TagSet.pm (new): option name is `comment' not `comments'.
-	(get_point): bugfix; used `grep' where should have used `map'.
-	Localize all usages of `$_'.
+   * MNI/TagSet.pm (new): option name is `comment' not `comments'.
+      (get_point): bugfix; used `grep' where should have used `map'.
+      Localize all usages of `$_'.
 
 2000-09-19  Steve ROBBINS  <stever@bic.mni.mcgill.ca>
-
-	* MNI/TagSet.pm:
-	* MNI/TagPoint.pm: new.  Future replacement of MNI::Tag.
-	A TagSet corresponds to a `.tag' file; it holds a list of
-	TagPoint objects.  The TagPoint objects allow read access to
-	all fields in the tag.
-
-	* t/tag.t: new.  Exercise the MNI::TagSet.
+   * MNI/TagSet.pm:
+   * MNI/TagPoint.pm: new.  Future replacement of MNI::Tag.
+      A TagSet corresponds to a `.tag' file; it holds a list of
+      TagPoint objects.  The TagPoint objects allow read access to
+      all fields in the tag.
+   * t/tag.t: new.  Exercise the MNI::TagSet.
 
 2000-09-14  Steve Robbins  <steve@nyongwa.montreal.qc.ca>
-
-	* MNI/Tag.pm: add POD documentation of all user-level functions.
+   * MNI/Tag.pm: add POD documentation of all user-level functions.
 
 2000-04-11  Steve ROBBINS  <stever@bic.mni.mcgill.ca>
-
-	* MNI/Tag.pm (_volume): change diagnostics.
+   * MNI/Tag.pm (_volume): change diagnostics.
 
 2000-03-13  Steve ROBBINS  <stever@bic.mni.mcgill.ca>
-
-	* MNI/Batch.pm (StartJob): don't clear entire set of SyncFiles,
-	only the ones corresponding to the PID of the starting job.
-	(Synchronize): fix bug that prevented counting number of outstanding
-	jobs; reported by Jason Lerch.
-
-	* t/batch-2.t: new.  Test Synchronize() function.
+   * MNI/Batch.pm (StartJob): don't clear entire set of SyncFiles,
+      only the ones corresponding to the PID of the starting job.
+      (Synchronize): fix bug that prevented counting number of outstanding
+      jobs; reported by Jason Lerch.
+   * t/batch-2.t: new.  Test Synchronize() function.
 
 2000-02-21  Steve Robbins  <steve@nyongwa.montreal.qc.ca>
-
-	* MNI/Startup.pm (startup): if TMPDIR is not defined, check for /usr/tmp,
-	/var/tmp, and /tmp; use the first directory found for TmpDir.
+   * MNI/Startup.pm (startup): if TMPDIR is not defined, check for /usr/tmp,
+      /var/tmp, and /tmp; use the first directory found for TmpDir.
 
 Sun Jan 16 15:37:54 2000  Steve Robbins  <steve@nyongwa.montreal.qc.ca>
-
-	* MNI.pm: bump VERSION to 0.06.
+   * MNI.pm: bump VERSION to 0.06.
 
 Sun Jan 16 15:16:02 2000  Steve Robbins  <steve@nyongwa.montreal.qc.ca>
-
-	* MNI/Tag.pm (load, save): qualify `open' and `close' calls with CORE:: to 
-	distinguish them from Tag::open and Tag::close.
+   * MNI/Tag.pm (load, save): qualify `open' and `close' calls with CORE:: to 
+      distinguish them from Tag::open and Tag::close.
 
 Sun Jan 16 14:58:54 2000  Steve Robbins  <steve@nyongwa.montreal.qc.ca>
-
-	* NEWS: new file.  Summary of USER-visible changes between
- 	releases.
-
-	* MNI/Batch.pm (StartJob): clear %SyncFiles before assigning to it
- 	when starting new job; otherwise old values for same JobPID will
- 	be returned.
-
-	* t/batch-0.t: new file.  Test basic features of MNI::Batch.pm,
- 	mostly the return values.
-
-	* t/batch-1.t: renamed from 'batch.t' in order that it be executed
-	_after_ batch-0.t.
-
-	* MNI/Batch.pm (QueueCommands): return startfile (if StartJob
- 	called), along with finish and fail files.
+   * NEWS: new file.  Summary of USER-visible changes between
+      releases.
+   * MNI/Batch.pm (StartJob): clear %SyncFiles before assigning to it
+      when starting new job; otherwise old values for same JobPID will
+      be returned.
+   * t/batch-0.t: new file.  Test basic features of MNI::Batch.pm,
+      mostly the return values.
+   * t/batch-1.t: renamed from 'batch.t' in order that it be executed
+      _after_ batch-0.t.
+   * MNI/Batch.pm (QueueCommands): return startfile (if StartJob
+      called), along with finish and fail files.
 
 Sat Dec 18 08:55:23 1999  Steve Robbins  <steve@nyongwa.montreal.qc.ca>
-
-	* MNI/Batch.pm (_queue_one_command): bugfix.  If passed an array
-	ref, take program name from first element of array to avoid
-	becoming confused by shellquote's quoting of metacharacters.
+   * MNI/Batch.pm (_queue_one_command): bugfix.  If passed an array
+      ref, take program name from first element of array to avoid
+      becoming confused by shellquote's quoting of metacharacters.
 
 Fri Dec 17 17:59:20 1999  Steve Robbins  <steve@nyongwa.montreal.qc.ca>
-
-	* MNI/Batch.pm (_queue_one_command): code reorganization; there is
-	now no useful return value.
-
-	* MNI/Batch.pm (QueueCommands): code reorganization; clean up pod
-	documentation.
-
-	* MNI/Batch.pm (Synchronize): code reorganization and bugfix.  The
-	old computation for $numjobs overcounted in the case that some
-	jobs synchronize on 'start' and some synchronize on 'finish'.  We
-	now count just the jobs that synchronize for the desired
-	condition.
-
-	* MNI/Batch.pm (FinishJob): code reorganization; now returns
-	array of filenames (finishfile, failfile).  For backwards
-	compatibility, returns scalar finishfile in scalar context.
-
-	* MNI/Batch.pm (StartJob): code reorganization, no semantic
-	changes.
-
-	* MNI/Batch.pm (_emit_rmtmpdir_shellcode): 
-	* MNI/Batch.pm (_emit_mktmpdir_shellcode): 
-	* MNI/Batch.pm (_emit_syncfile_shellcode): new.  Write shell
-	code to BATCH filehandle.
-
-	* MNI/Batch.pm (_set_syncfile_name): new.  Generate syncfile
-	name for given condition and store in %SyncFiles.
-
-	* MNI/Batch.pm (create_sync_file): split into two subroutines:
-	_set_syncfile_name and _emit_syncfile_shellcode.
-
-	* MNI/Batch.pm (_syncfile_name): renamed to _get_syncfile_name;
-	$pid defaults to $JobPID if not specified.
-
-	* t/batch.t (wait_for_files): test that StartJob() returns a
-	defined start file and that FinishJob() returns (in scalar
-	context) a defined finish file.
+   * MNI/Batch.pm (_queue_one_command): code reorganization; there is
+      now no useful return value.
+   * MNI/Batch.pm (QueueCommands): code reorganization; clean up pod
+      documentation.
+   * MNI/Batch.pm (Synchronize): code reorganization and bugfix.  The
+      old computation for $numjobs overcounted in the case that some
+      jobs synchronize on 'start' and some synchronize on 'finish'.  We
+      now count just the jobs that synchronize for the desired
+      condition.
+   * MNI/Batch.pm (FinishJob): code reorganization; now returns
+      array of filenames (finishfile, failfile).  For backwards
+      compatibility, returns scalar finishfile in scalar context.
+   * MNI/Batch.pm (StartJob): code reorganization, no semantic
+      changes.
+   * MNI/Batch.pm (_emit_rmtmpdir_shellcode): 
+   * MNI/Batch.pm (_emit_mktmpdir_shellcode): 
+   * MNI/Batch.pm (_emit_syncfile_shellcode): new.  Write shell
+      code to BATCH filehandle.
+   * MNI/Batch.pm (_set_syncfile_name): new.  Generate syncfile
+      name for given condition and store in %SyncFiles.
+   * MNI/Batch.pm (create_sync_file): split into two subroutines:
+      _set_syncfile_name and _emit_syncfile_shellcode.
+   * MNI/Batch.pm (_syncfile_name): renamed to _get_syncfile_name;
+      $pid defaults to $JobPID if not specified.
+   * t/batch.t (wait_for_files): test that StartJob() returns a
+      defined start file and that FinishJob() returns (in scalar
+      context) a defined finish file.
 
 Thu Dec  9 16:52:04 1999  Steve ROBBINS  <stever@bic.mni.mcgill.ca>
-
-	* MNI/Tag.pm (copy): croak if copy is not invoked on a valid
-	reference.
+   * MNI/Tag.pm (copy): croak if copy is not invoked on a valid
+      reference.
 
 1999-12-02  Chris Cocosco  <crisco@bic.mni.mcgill.ca>
-
-	* MNI/Batch.pm: functionality changes! 
-	= 'fail' sync files are now _not_ created unless the "synchronize"
-	option is set to 'finish' or 'both'.
-	= "syncdir" now defaults to './.sync' if 'HOME' is not defined in
-	the environment (which is the case for CGI scripts for example)
-	
+   * MNI/Batch.pm: functionality changes! 
+      = 'fail' sync files are now _not_ created unless the "synchronize"
+      option is set to 'finish' or 'both'.
+      = "syncdir" now defaults to './.sync' if 'HOME' is not defined in
+      the environment (which is the case for CGI scripts for example)
+      
 1999-12-02  Chris Cocosco  <crisco@bic.mni.mcgill.ca>
-
-	* MNI/Batch.pm: new option: 'batch_reports'
-	("should the underlying batch process run in verbose mode?")
-	Unless the user explicitly sets it, this option defaults to
-	whatever value 'verbose' has.
-
-	[*Caveat*] the text produced by the underlying process goes to
-	STDOUT even if the 'verbose' text (which is produced by Batch.pm)
-	is redirected somewhere else by means of the 'loghandle' option
+   * MNI/Batch.pm: new option: 'batch_reports'
+      ("should the underlying batch process run in verbose mode?")
+      Unless the user explicitly sets it, this option defaults to
+      whatever value 'verbose' has.
+      [*Caveat*] the text produced by the underlying process goes to
+      STDOUT even if the 'verbose' text (which is produced by Batch.pm)
+      is redirected somewhere else by means of the 'loghandle' option
 
 1999-11-30  Chris COCOSCO  <crisco@thaisa.bic.mni.mcgill.ca>
-
-	* MNI/FileUtilities.pm (check_files): documentation fixes.
-
-	* MNI/Batch.pm: documentation fixes.
-	(set_undefined_option): made it more robust (now it
-	can properly handle the case when the calling package is
-	MNI::Spawn and not main:: )
-	(StartJob): fixed a bug related to set_undefined_option
-
-	* MNI/Spawn.pod: added a clarification about redirection clobber
-	when using batch.
+   * MNI/FileUtilities.pm (check_files): documentation fixes.
+   * MNI/Batch.pm: documentation fixes.
+      (set_undefined_option): made it more robust (now it
+      can properly handle the case when the calling package is
+      MNI::Spawn and not main:: )
+      (StartJob): fixed a bug related to set_undefined_option
+   * MNI/Spawn.pod: added a clarification about redirection clobber
+      when using batch.
 
 1999-11-17  Chris COCOSCO  <crisco@thaisa.bic.mni.mcgill.ca>
-
-	* MNI/Spawn.pm: added a carp warning about the redirection
-	clobber/append when running through batch.
+   * MNI/Spawn.pm: added a carp warning about the redirection
+      clobber/append when running through batch.
 
 Wed Oct 27 18:38:15 1999  Steve ROBBINS  <stever@bic.mni.mcgill.ca>
-
-	* MNI/Batch.pm (create_sync_file): use underscore rather than
- 	period to sanitize names; files with leading periods are a
- 	nuisance to find using 'ls'.
+   * MNI/Batch.pm (create_sync_file): use underscore rather than
+      period to sanitize names; files with leading periods are a
+      nuisance to find using 'ls'.
 
 Tue Oct 26 13:24:13 1999  Steve ROBBINS  <stever@bic.mni.mcgill.ca>
-
-	* MNI/Tag.pm (save): don't use self->{_comments} if it
-	isn't defined.
-
-	* MNI/Batch.pm (create_sync_file): sanitize sync file names by
-	replacing any non-safe character with a period.
+   * MNI/Tag.pm (save): don't use self->{_comments} if it
+      isn't defined.
+   * MNI/Batch.pm (create_sync_file): sanitize sync file names by
+      replacing any non-safe character with a period.
 
 Fri Oct 22 17:47:24 1999  Steve ROBBINS  <stever@bic.mni.mcgill.ca>
-
-	* t/batch.t (test): register programs spawned during the tests.
-
-	* MNI/Batch.pm (QueueCommands): now returns *both* the fail file
-	and the finish file names.  For backwards compatibilty, only the 
-	finish file is returned in scalar context.
+   * t/batch.t (test): register programs spawned during the tests.
+   * MNI/Batch.pm (QueueCommands): now returns *both* the fail file
+      and the finish file names.  For backwards compatibilty, only the 
+      finish file is returned in scalar context.
 
 Thu Oct 14 18:34:16 1999  Steve ROBBINS  <stever@bic.mni.mcgill.ca>
-
-	* MNI/Tag.pm: add code to update tag coordinates and write tags to
- 	file.  The tag code still ignores comments and "auxiliary" data.
-
-	* MNI/Tag.pm(new): for creating a new tag file; this is a change
- 	in constructor semantics!
-
-	* MNI/Tag.pm(open): for opening existing tag file; this is what
-	the old "new" constructor did.
-
-	* t/example1.tag:
-	* t/tag.t: new files.  Regression testing for MNI::Tag.
-
-	* preptest:
-	* preptest.sh:
-	* rlog.out: removed junk files.
+   * MNI/Tag.pm: add code to update tag coordinates and write tags to
+      file.  The tag code still ignores comments and "auxiliary" data.
+   * MNI/Tag.pm(new): for creating a new tag file; this is a change
+      in constructor semantics!
+   * MNI/Tag.pm(open): for opening existing tag file; this is what
+      the old "new" constructor did.
+   * t/example1.tag:
+   * t/tag.t: new files.  Regression testing for MNI::Tag.
+   * preptest:
+   * preptest.sh:
+   * rlog.out: removed junk files.
 
 Tue Oct 12 12:40:48 1999  Steve ROBBINS  <stever@bic.mni.mcgill.ca>
-
-	* MNI/Batch.pm: typos in documentation.
+   * MNI/Batch.pm: typos in documentation.
 
 Fri Aug 13 20:12:12 1999  Steve ROBBINS  <stever@bic.mni.mcgill.ca>
-
-	* MNI/Tag.pm: new file.  Manipulate tag files as perl objects.
+   * MNI/Tag.pm: new file.  Manipulate tag files as perl objects.
 
 Thu Aug 12 14:17:14 1999  Steve Robbins  <steve@nyongwa.montreal.qc.ca>
-
-	* MNI/Batch.pm (_batch_optstring): fixed 'shell' option; forgot to
- 	lowercase it when making the previous changes.
+   * MNI/Batch.pm (_batch_optstring): fixed 'shell' option; forgot to
+      lowercase it when making the previous changes.
 
 Wed Aug 11 19:46:41 1999  Steve ROBBINS  <stever@bic.mni.mcgill.ca>
-
-	* MNI/Batch.pm: don't lexically scope ProgramName.
-
+   * MNI/Batch.pm: don't lexically scope ProgramName.
 Sun Aug  8 17:11:58 1999  Steve Robbins  <steve@nyongwa.montreal.qc.ca>
-
-	* MNI/Batch.pm (create_sync_file): take care when job_name is not
- 	defined.
+   * MNI/Batch.pm (create_sync_file): take care when job_name is not
+      defined.
 
 Sat Aug  7 16:58:16 1999  Steve Robbins  <steve@nyongwa.montreal.qc.ca>
-
-	* MNI/Batch.pm: all package variables, other than @ISA,
- 	@EXPORT_OK, and %EXPORT_TAGS localised with `my'.  Option
- 	identifiers changed to "lower_case_underscore_separated", the
- 	style used in MNI::Spawn.
-
-	* MNI/Batch.pm (StartJob): all parameters are optional, passed in
- 	"key => value" style.  Return value changed to be the name of the
- 	`start' sync file, if any; return value was previously the JobPID
- 	(undocumented).
-
-	* MNI/Batch.pm (FinishJob): new option `close_delay' used if delay
- 	not given as parameter.  Return value is name of `finish' sync
- 	file, if any.
-
-	* MNI/Batch.pm (QueueCommand): QueueCommand() will call StartJob
- 	and FinishJob if no job open; no longer carps about this usage.
-  	If QueueCommand calls FinishJob, the name of the `finish' sync
- 	file, if any, is returned.
-
-	* MNI/Batch.pm (QueueCommands): if QueueCommands calls FinishJob,
- 	the name of the `finish' sync file, if any, is returned.
-
-	* t/batch.t: updated to account for changes to Batch.pm; no new
- 	test coverage.
+   * MNI/Batch.pm: all package variables, other than @ISA,
+      @EXPORT_OK, and %EXPORT_TAGS localised with `my'.  Option
+      identifiers changed to "lower_case_underscore_separated", the
+      style used in MNI::Spawn.
+   * MNI/Batch.pm (StartJob): all parameters are optional, passed in
+      "key => value" style.  Return value changed to be the name of the
+      `start' sync file, if any; return value was previously the JobPID
+      (undocumented).
+   * MNI/Batch.pm (FinishJob): new option `close_delay' used if delay
+      not given as parameter.  Return value is name of `finish' sync
+      file, if any.
+   * MNI/Batch.pm (QueueCommand): QueueCommand() will call StartJob
+      and FinishJob if no job open; no longer carps about this usage.
+       If QueueCommand calls FinishJob, the name of the `finish' sync
+      file, if any, is returned.
+   * MNI/Batch.pm (QueueCommands): if QueueCommands calls FinishJob,
+      the name of the `finish' sync file, if any, is returned.
+   * t/batch.t: updated to account for changes to Batch.pm; no new
+      test coverage.
 
 Fri Aug  6 18:09:11 1999  Steve Robbins  <steve@nyongwa.montreal.qc.ca>
-
-	* MNI/Spawn.pm (spawn): batch's QueueCommand option MergeErrors
- 	became merge_stderr.
+   * MNI/Spawn.pm (spawn): batch's QueueCommand option MergeErrors
+      became merge_stderr.
 
 Tue Jul 27 19:00:42 1999  Steve ROBBINS  <stever@bic.mni.mcgill.ca>
-
-	* MNI/Batch.pm (Synchronize): fix documentation of return value.
-  	Return ref to empty array if not executing.
-
-	* MNI/Batch.pm: Allow `JobName', `StartAfter', `MergeErrors',
- 	`stdout', and `stderr' as global options.
-
-	* MNI/Spawn.pm (spawn): change parameters for Batch::QueueCommand
- 	call.
+   * MNI/Batch.pm (Synchronize): fix documentation of return value.
+       Return ref to empty array if not executing.
+   * MNI/Batch.pm: Allow `JobName', `StartAfter', `MergeErrors',
+      `stdout', and `stderr' as global options.
+   * MNI/Spawn.pm (spawn): change parameters for Batch::QueueCommand
+      call.
 
 Thu Jul 22 19:52:36 1999  Steve ROBBINS  <stever@bic.mni.mcgill.ca>
-
-	* MNI/Batch.pm (gen_batch_options, StartJob, QueueCommand): allow
- 	overriding any option on a per-job basis.  Implement `StartAfter' 
-	option, passed on to batch as `-a'.
-	(StartJobAfter): removed function.
-
-	* t/batch.t: bugfix (start_batchtest) and changes related to above.
-
-	* MNI/Batch.pm (QueueCommands): compacted the code.  No semantic
- 	changes made.
+   * MNI/Batch.pm (gen_batch_options, StartJob, QueueCommand): allow
+      overriding any option on a per-job basis.  Implement `StartAfter' 
+      option, passed on to batch as `-a'.
+      (StartJobAfter): removed function.
+   * t/batch.t: bugfix (start_batchtest) and changes related to above.
+   * MNI/Batch.pm (QueueCommands): compacted the code.  No semantic
+      changes made.
 
 Tue May 18 18:36:39 1999  Steve ROBBINS  <stever@bic.mni.mcgill.ca>
-
-	* MNI/Batch.pm (StartJobAfter): experimental batch interface using
- 	'-a' option to delay a job.  This really ought to be specified
-	via Batch( job, After => whatever, ... ), like the Spawn interface.
+   * MNI/Batch.pm (StartJobAfter): experimental batch interface using
+      '-a' option to delay a job.  This really ought to be specified
+      via Batch( job, After => whatever, ... ), like the Spawn interface.
 
 Mon May 17 16:41:18 1999  Steve ROBBINS  <stever@bic.mni.mcgill.ca>
-
-	* t/batch.t: added simple testing of StartJob, QueueCommand,
- 	QueueCommands, and FinishJob.  No testing of synchronization, yet.
-
-	* MNI/Batch.pm (QueueCommands): StartBatchJob --> StartJob typo
- 	fixed.  Expand documentation; all options documented.
+   * t/batch.t: added simple testing of StartJob, QueueCommand,
+      QueueCommands, and FinishJob.  No testing of synchronization, yet.
+   * MNI/Batch.pm (QueueCommands): StartBatchJob --> StartJob typo
+      fixed.  Expand documentation; all options documented.
 
 Thu May 13 19:33:40 1999  Steve ROBBINS  <stever@bic.mni.mcgill.ca>
-
-	* t/batch.t: new file.  Start of MNI::Batch regression tests.
-
-	* MNI/Batch.pm (Synchronize): rearrange the code slightly.  Returns
-	true if -noexecute.
-
-	* MNI/Batch.pm (QueueCommands): fix bug that prevented method
-	from working.
-
-	* MNI/Batch.pm: add pod documentation.  Remove $fakeJobPID.
-
-	* MNI/Batch.pm (sync_file_name): folded into create_sync_file().
+   * t/batch.t: new file.  Start of MNI::Batch regression tests.
+   * MNI/Batch.pm (Synchronize): rearrange the code slightly.  Returns
+      true if -noexecute.
+   * MNI/Batch.pm (QueueCommands): fix bug that prevented method
+      from working.
+   * MNI/Batch.pm: add pod documentation.  Remove $fakeJobPID.
+   * MNI/Batch.pm (sync_file_name): folded into create_sync_file().
 
 Wed May 12 18:52:39 1999  Steve ROBBINS  <stever@bic.mni.mcgill.ca>
-
-	* MANIFEST: add MNI/Batch.pm.
+   * MANIFEST: add MNI/Batch.pm.
 
 Wed May 12 18:44:49 1999  Steve ROBBINS  <stever@bic.mni.mcgill.ca>
-
-	* doc/.cvsignore: new file.
-
-	* doc/Makefile (SOURCE,TMPDIRS): remove Getopt stuff.
+   * doc/.cvsignore: new file.
+   * doc/Makefile (SOURCE,TMPDIRS): remove Getopt stuff.
 
 Wed May 12 18:23:10 1999  Steve ROBBINS  <stever@bic.mni.mcgill.ca>
-
-	* .cvsignore:
-	* MNI/.cvsignore:
-	* t/.cvsignore: new files.
-
-	* MANIFEST: removed getopt-related files.
-
-	* Makefile.PL (PMLIBDIRS): removed Getopt.
+   * .cvsignore:
+   * MNI/.cvsignore:
+   * t/.cvsignore: new files.
+   * MANIFEST: removed getopt-related files.
+   * Makefile.PL (PMLIBDIRS): removed Getopt.
 
 Wed May 12 16:56:06 1999  Steve ROBBINS  <stever@bic.mni.mcgill.ca>
-
-	* MNI/Batch.pm: new file.
-	* MNI/Spawn.pm: Chris Cocosco's batch enhancements, a port from
-	older batch code of Greg.
+   * MNI/Batch.pm: new file.
+   * MNI/Spawn.pm: Chris Cocosco's batch enhancements, a port from
+      older batch code of Greg.
 
 Wed May 12 16:51:54 1999  Steve ROBBINS  <stever@bic.mni.mcgill.ca>
-
-	* ChangeLog: new file.
-
-	* Initial import of Greg Ward's MNI perl library.  This is based
- 	on the version 0.05 sources found in ~greg/src/libperl/mnilib/
-	with the following removals:
-
-	Getopt: released in own package ``Getopt::Tabular''.
-	Makefile.old: built file (from Makefile.PL)
-	junk: directory full of assorted test code
-	log2: contains the message `junk/shred: this goes to log2'
-	mni_perllib-0.05.tar.gz: tar package of code
-	t/getopt.pl: symlink to Getopt::Tabular test code
+   * ChangeLog: new file.
+   * Initial import of Greg Ward's MNI perl library.  This is based
+      on the version 0.05 sources found in ~greg/src/libperl/mnilib/
+      with the following removals:
+      Getopt: released in own package ``Getopt::Tabular''.
+      Makefile.old: built file (from Makefile.PL)
+      junk: directory full of assorted test code
+      log2: contains the message `junk/shred: this goes to log2'
+      mni_perllib-0.05.tar.gz: tar package of code
+      t/getopt.pl: symlink to Getopt::Tabular test code
 
